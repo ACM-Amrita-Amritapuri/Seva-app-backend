@@ -1,0 +1,241 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+}
+
+header {
+    background-color: #0056b3;
+    color: white;
+    padding: 1rem 0;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+header h1 {
+    margin: 0;
+    padding-bottom: 0.5rem;
+}
+
+nav button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.25rem;
+    margin: 0 0.25rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+}
+
+nav button:hover {
+    background-color: #0056b3;
+}
+
+nav button.hidden {
+    display: none;
+}
+
+main {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 20px auto;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+.message-container {
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    display: none; /* Hidden by default */
+}
+
+.message-container.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.message-container.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fdfdfd;
+}
+
+section.hidden {
+    display: none;
+}
+
+h2, h3, h4 {
+    color: #007bff;
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.auth-forms {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.form-card {
+    background-color: #f2f2f2;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    flex: 1;
+    min-width: 300px;
+    max-width: 45%;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+label {
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="file"],
+textarea,
+select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: calc(100% - 22px); /* Account for padding and border */
+}
+
+button {
+    background-color: #28a745; /* Green for actions */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+    margin-top: 10px;
+}
+
+button:hover {
+    background-color: #218838;
+}
+
+button.cancel-button {
+    background-color: #dc3545; /* Red for cancel */
+}
+button.cancel-button:hover {
+    background-color: #c82333;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.data-table-container {
+    margin-top: 1rem;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Specific styling for attendance buttons */
+.attendance-buttons button {
+    margin-right: 5px;
+    padding: 5px 10px;
+    font-size: 0.9em;
+}
+.attendance-buttons .checkin-button {
+    background-color: #007bff;
+}
+.attendance-buttons .checkin-button:hover {
+    background-color: #0056b3;
+}
+.attendance-buttons .checkout-button {
+    background-color: #ffc107;
+    color: #333;
+}
+.attendance-buttons .checkout-button:hover {
+    background-color: #e0a800;
+}
+.attendance-buttons .checkout-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.question-status {
+    font-style: italic;
+    font-weight: bold;
+}
+.question-status.answered { color: green; }
+.question-status.pending { color: orange; }
+
+.answer-form-container {
+    background-color: #eaf6ff;
+    border: 1px solid #a8d7ff;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+}
+.answer-form-container textarea {
+    width: calc(100% - 20px);
+}
+.answer-form-container button {
+    margin-right: 5px;
+}

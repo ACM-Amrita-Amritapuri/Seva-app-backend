@@ -1,0 +1,2719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seva App Unified Frontend</title>
+    <style>
+        /* General Body & Typography */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #eef1f5;
+            color: #333;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Header & Navigation */
+        header {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 1rem 0;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            padding-bottom: 0.8rem;
+            font-size: 2.2rem;
+            font-weight: 300;
+        }
+
+        nav {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        nav button {
+            background-color: #34495e;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: all 0.2s ease-in-out;
+            min-width: 100px;
+        }
+
+        nav button:hover:not(.active):not(.logout-btn) {
+            background-color: #4a627a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        nav button.active {
+            background-color: #3498db;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(52, 152, 219, 0.4);
+        }
+
+        nav button.logout-btn {
+            background-color: #e74c3c;
+            margin-left: auto; /* Push logout button to the right */
+            margin-right: 20px;
+        }
+
+        nav button.logout-btn:hover {
+            background-color: #c0392b;
+        }
+
+        /* Main Container */
+        #app-container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 30px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Headings */
+        h2, h3, h4 {
+            color: #34495e;
+            border-bottom: 1px solid #ecf0f1;
+            padding-bottom: 15px;
+            margin-top: 2rem;
+            font-weight: 400;
+        }
+        h2 { font-size: 1.8rem; }
+        h3 { font-size: 1.4rem; }
+        h4 { font-size: 1.2rem; }
+
+        /* Forms */
+        form {
+            margin-bottom: 25px;
+            padding: 25px;
+            background-color: #fcfcfc;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        form label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 0.95rem;
+        }
+
+        form input[type="text"],
+        form input[type="email"],
+        form input[type="password"],
+        form input[type="tel"],
+        form input[type="number"],
+        form input[type="datetime-local"],
+        form input[type="file"],
+        form select,
+        form textarea {
+            width: calc(100% - 24px); /* Account for padding */
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #bdc3c7;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 0.95rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        form input[type="text"]:focus,
+        form input[type="email"]:focus,
+        form input[type="password"]:focus,
+        form input[type="tel"]:focus,
+        form input[type="number"]:focus,
+        form input[type="datetime-local"]:focus,
+        form input[type="file"]:focus,
+        form select:focus,
+        form textarea:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+            outline: none;
+        }
+
+        form textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        form button[type="submit"], .action-button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        form button[type="submit"]:hover, .action-button:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+        }
+        form button[type="submit"]:active, .action-button:active {
+            transform: translateY(0);
+        }
+
+        /* Messages */
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #fdeded;
+            border-left: 5px solid #e74c3c;
+            border-radius: 4px;
+        }
+
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e7f7ed;
+            border-left: 5px solid #27ae60;
+            border-radius: 4px;
+        }
+        
+        .info {
+            color: #3498db;
+            font-weight: bold;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #eaf5fb;
+            border-left: 5px solid #3498db;
+            border-radius: 4px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            table-layout: auto; /* Use auto for better content fit, or fixed for strict columns */
+            font-size: 0.9rem;
+        }
+
+        table th, table td {
+            border: 1px solid #ecf0f1;
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        table th {
+            background-color: #f5f7fa;
+            font-weight: 600;
+            color: #555;
+            white-space: nowrap; /* Prevent headers from wrapping too much */
+        }
+
+        table tbody tr:nth-child(even) {
+            background-color: #f8f9fb;
+        }
+
+        table tbody tr:hover {
+            background-color: #f1f4f8;
+        }
+
+        table button {
+            padding: 8px 12px;
+            margin-right: 8px;
+            margin-bottom: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        table button:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        table button.delete-btn {
+            background-color: #e74c3c;
+        }
+
+        table button.delete-btn:hover {
+            background-color: #c0392b;
+        }
+
+        /* Sections / Cards */
+        section {
+            margin-bottom: 30px;
+            padding: 25px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        section h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: none;
+        }
+
+        /* Modal Styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000; /* High z-index to overlay everything */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(3px); /* Subtle blur for modern feel */
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            margin: 5% auto; /* Slightly higher placement */
+            padding: 30px;
+            border: none; /* No border for a cleaner look */
+            width: 90%;
+            max-width: 800px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            position: relative;
+            animation: fadeIn 0.3s ease-out; /* Fade-in animation */
+        }
+
+        .close-button {
+            color: #888;
+            float: right;
+            font-size: 30px;
+            font-weight: bold;
+            line-height: 1;
+            margin-top: -10px;
+            margin-right: -10px;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #333;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Dashboard Specific Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-top: 25px;
+        }
+        .dashboard-card {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease-in-out;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        /* Flex Utilities */
+        .flex-container {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .flex-container button {
+            margin-top: 0; /* Override default button margin */
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+            nav {
+                flex-direction: column;
+                align-items: center;
+            }
+            nav button {
+                width: 90%;
+                margin: 5px 0;
+            }
+            nav button.logout-btn {
+                margin-left: unset;
+                margin-right: unset;
+                width: 90%;
+            }
+            #app-container {
+                margin: 15px;
+                padding: 15px;
+            }
+            form input[type="text"],
+            form input[type="email"],
+            form input[type="password"],
+            form input[type="tel"],
+            form input[type="number"],
+            form input[type="datetime-local"],
+            form select,
+            form textarea {
+                width: calc(100% - 20px);
+            }
+            table, .dashboard-grid {
+                display: block; /* Stack tables and cards on small screens */
+                overflow-x: auto; /* Allow horizontal scrolling for tables */
+                white-space: nowrap;
+            }
+            table th, table td {
+                min-width: 120px; /* Ensure table cells are readable */
+            }
+            .modal-content {
+                margin: 5% auto;
+                width: 95%;
+            }
+        }
+        @media (max-width: 480px) {
+            body { font-size: 0.9rem; }
+            h2 { font-size: 1.5rem; }
+            h3 { font-size: 1.2rem; }
+            nav button { padding: 0.6rem 1rem; font-size: 0.9rem; }
+            form button[type="submit"], .action-button { padding: 10px 15px; font-size: 0.95rem; }
+            table button { padding: 6px 10px; font-size: 0.85rem; }
+            .flex-container { gap: 10px; }
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Seva App</h1>
+        <nav id="mainNav">
+            <button id="navDashboard" onclick="renderPage('dashboard')" style="display: none;">Dashboard</button>
+            <button id="navAnnouncements" onclick="renderPage('announcements')" style="display: none;">Announcements</button>
+            <button id="navQuestions" onclick="renderPage('questions')" style="display: none;">Q&A</button>
+            <button id="navCommittees" onclick="renderPage('committees')" style="display: none;">Committees</button>
+            <button id="navLocations" onclick="renderPage('locations')" style="display: none;">Locations</button>
+            <button id="navVolunteers" onclick="renderPage('volunteers')" style="display: none;">Volunteers</button>
+            <button id="navAttendance" onclick="renderPage('attendance')" style="display: none;">Attendance</button>
+            <button id="logoutBtn" class="logout-btn" onclick="logout()" style="display: none;">Logout</button>
+        </nav>
+    </header>
+
+    <div id="app-container">
+        <!-- Dynamic content will be loaded here by JavaScript -->
+        <p class="info" style="text-align: center;">Loading application...</p>
+    </div>
+
+    <!-- Universal Modals -->
+
+    <!-- Edit/Create Volunteer Modal -->
+    <div id="volunteerModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeVolunteerModal()">&times;</span>
+            <h3 id="volunteerModalTitle"></h3>
+            <form id="volunteerForm">
+                <input type="hidden" id="volId">
+                <label for="volName">Name:</label>
+                <input type="text" id="volName" required>
+                <label for="volEmail">Email (Optional):</label>
+                <input type="email" id="volEmail">
+                <label for="volPhone">Phone (Optional):</label>
+                <input type="tel" id="volPhone">
+                <label for="volDept">Department (Optional):</label>
+                <input type="text" id="volDept">
+                <label for="volCollegeID">College ID (Optional):</label>
+                <input type="text" id="volCollegeID">
+                <label for="volPassword">Password (Set/Reset, min 8 chars, Optional):</label>
+                <input type="password" id="volPassword" minlength="8">
+                <button type="submit" class="action-button">Save Volunteer</button>
+            </form>
+            <p id="volModalMessage"></p>
+        </div>
+    </div>
+
+    <!-- Edit/Create Announcement Modal -->
+    <div id="announcementModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeAnnouncementModal()">&times;</span>
+            <h3 id="announcementModalTitle"></h3>
+            <form id="announcementForm">
+                <input type="hidden" id="announcementId">
+                <label for="announcementEventId">Event ID:</label>
+                <input type="number" id="announcementEventId" required>
+                <label for="announcementCommitteeId">Committee ID (Optional):</label>
+                <input type="number" id="announcementCommitteeId">
+                <label for="announcementTitle">Title:</label>
+                <input type="text" id="announcementTitle" required>
+                <label for="announcementBody">Body:</label>
+                <textarea id="announcementBody" required></textarea>
+                <label for="announcementPriority">Priority:</label>
+                <select id="announcementPriority">
+                    <option value="normal">Normal</option>
+                    <option value="low">Low</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                </select>
+                <label for="announcementExpiresAt">Expires At (Optional, YYYY-MM-DDTHH:MM):</label>
+                <input type="datetime-local" id="announcementExpiresAt">
+                <button type="submit" class="action-button">Save Announcement</button>
+            </form>
+            <p id="announcementModalMessage"></p>
+        </div>
+    </div>
+
+    <!-- Edit/Create Committee Modal -->
+    <div id="committeeModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeCommitteeModal()">&times;</span>
+            <h3 id="committeeModalTitle"></h3>
+            <form id="committeeForm">
+                <input type="hidden" id="committeeId">
+                <label for="committeeEventId">Event ID:</label>
+                <input type="number" id="committeeEventId" required>
+                <label for="committeeName">Name:</label>
+                <input type="text" id="committeeName" required>
+                <label for="committeeDescription">Description (Optional):</label>
+                <textarea id="committeeDescription"></textarea>
+                <button type="submit" class="action-button">Save Committee</button>
+            </form>
+            <p id="committeeModalMessage"></p>
+        </div>
+    </div>
+
+    <!-- Edit/Create Location Modal -->
+    <div id="locationModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeLocationModal()">&times;</span>
+            <h3 id="locationModalTitle"></h3>
+            <form id="locationForm">
+                <input type="hidden" id="locationId">
+                <label for="locationEventId">Event ID:</label>
+                <input type="number" id="locationEventId" required>
+                <label for="locationName">Name:</label>
+                <input type="text" id="locationName" required>
+                <label for="locationType">Type:</label>
+                <select id="locationType" required>
+                    <option value="stage">Stage</option>
+                    <option value="dining">Dining</option>
+                    <option value="helpdesk">Helpdesk</option>
+                    <option value="parking">Parking</option>
+                    <option value="water">Water</option>
+                    <option value="toilet">Toilet</option>
+                    <option value="poi">Point of Interest (POI)</option>
+                    <option value="other">Other</option>
+                </select>
+                <label for="locationDescription">Description (Optional):</label>
+                <textarea id="locationDescription"></textarea>
+                <label for="locationLat">Latitude:</label>
+                <input type="number" step="any" id="locationLat" required>
+                <label for="locationLng">Longitude:</label>
+                <input type="number" step="any" id="locationLng" required>
+                <button type="submit" class="action-button">Save Location</button>
+            </form>
+            <p id="locationModalMessage"></p>
+        </div>
+    </div>
+
+    <!-- Answer Question Modal -->
+    <div id="answerQuestionModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeAnswerModal()">&times;</span>
+            <h3>Answer Question <span id="answerQuestionId"></span></h3>
+            <p><strong>Question:</strong> <span id="questionToAnswer"></span></p>
+            <form id="answerQuestionForm">
+                <label for="answerText">Your Answer:</label>
+                <textarea id="answerText" required></textarea>
+                <button type="submit" class="action-button">Submit Answer</button>
+            </form>
+            <p id="answerMessage"></p>
+        </div>
+    </div>
+
+    <!-- Create/Update Assignment Modal -->
+    <div id="assignmentModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeAssignmentModal()">&times;</span>
+            <h3 id="assignmentModalTitle"></h3>
+            <form id="assignmentForm">
+                <input type="hidden" id="assignmentId">
+                <label for="assignmentEventId">Event ID:</label>
+                <input type="number" id="assignmentEventId" required>
+                <label for="assignmentCommitteeId">Committee ID:</label>
+                <input type="number" id="assignmentCommitteeId" required>
+                <label for="assignmentVolunteerId">Volunteer ID:</label>
+                <input type="number" id="assignmentVolunteerId" required>
+                <label for="assignmentRole">Role:</label>
+                <select id="assignmentRole">
+                    <option value="volunteer">Volunteer</option>
+                    <option value="lead">Lead</option>
+                    <option value="support">Support</option>
+                </select>
+                <label for="assignmentStatus">Status:</label>
+                <select id="assignmentStatus">
+                    <option value="assigned">Assigned</option>
+                    <option value="standby">Standby</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <label for="assignmentReportingTime">Reporting Time (Optional, YYYY-MM-DDTHH:MM):</label>
+                <input type="datetime-local" id="assignmentReportingTime">
+                <label for="assignmentShift">Shift (Optional):</label>
+                <input type="text" id="assignmentShift">
+                <label for="assignmentStartTime">Start Time (Optional, YYYY-MM-DDTHH:MM):</label>
+                <input type="datetime-local" id="assignmentStartTime">
+                <label for="assignmentEndTime">End Time (Optional, YYYY-MM-DDTHH:MM):</label>
+                <input type="datetime-local" id="assignmentEndTime">
+                <label for="assignmentNotes">Notes (Optional):</label>
+                <textarea id="assignmentNotes"></textarea>
+                <button type="submit" class="action-button">Save Assignment</button>
+            </form>
+            <p id="assignmentModalMessage"></p>
+        </div>
+    </div>
+
+
+    <script>
+        const BASE_URL = 'http://localhost:8000';
+        const appContainer = document.getElementById('app-container');
+        const mainNav = document.getElementById('mainNav');
+
+        let currentModalInstance = null; // Track which modal is currently open
+
+        // --- Utility Functions (apiCall, logout, checkAuthAndRedirect) ---
+
+        /**
+         * Generic API call helper.
+         * @param {string} path - The API endpoint path (e.g., '/auth/login').
+         * @param {string} [method='GET'] - HTTP method (GET, POST, PUT, DELETE).
+         * @param {object|FormData} [body=null] - Request body data.
+         * @param {boolean} [requireAuth=false] - Whether to include JWT token.
+         * @param {string} [contentType='application/json'] - Content-Type header.
+         * @returns {Promise<any>} - The response data.
+         */
+        async function apiCall(path, method = 'GET', body = null, requireAuth = false, contentType = 'application/json') {
+            const headers = {};
+            const config = { method };
+
+            if (body && contentType === 'application/json') {
+                headers['Content-Type'] = 'application/json';
+                config.body = JSON.stringify(body);
+            } else if (body && contentType === 'multipart/form-data') {
+                // FormData doesn't need Content-Type header explicitly set; fetch does it automatically
+                config.body = body;
+            }
+
+            if (requireAuth) {
+                const token = localStorage.getItem('access_token');
+                if (!token) {
+                    throw new Error('Authentication required. Please log in.');
+                }
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            config.headers = headers;
+
+            console.log(`Making ${method} request to ${BASE_URL}${path}`, config);
+
+            const response = await fetch(`${BASE_URL}${path}`, config);
+
+            if (response.status === 204) { // No Content
+                return {};
+            }
+
+            if (contentType === 'text/csv' && response.ok) {
+                return await response.text();
+            }
+
+            let responseData;
+            try {
+                responseData = await response.json();
+            } catch (e) {
+                if (!response.ok) {
+                    throw new Error(`Server returned status ${response.status} but no valid JSON: ${await response.text()}`);
+                }
+                return {}; // For 200 OK without JSON (e.g., some DELETEs might respond this way)
+            }
+
+            if (!response.ok) {
+                console.error('API Error:', responseData);
+                throw new Error(responseData.error || 'Something went wrong on the server.');
+            }
+
+            return responseData;
+        }
+
+        /**
+         * Checks authentication status and redirects if necessary.
+         * @param {string[]} [requiredRoles=[]] - Array of roles required to access the current page.
+         * @returns {boolean} - True if authenticated and authorized, false otherwise.
+         */
+        function checkAuthAndRedirect(requiredRoles = []) {
+            const token = localStorage.getItem('access_token');
+            const userRole = localStorage.getItem('user_role');
+            const currentPage = window.location.hash.replace('#', '');
+
+            if (!token) {
+                // Allow public pages (login, register)
+                if (currentPage !== 'login' && currentPage !== 'register') {
+                    alert('You are not logged in. Please log in.');
+                    renderPage('login');
+                }
+                return false;
+            }
+
+            if (requiredRoles.length > 0 && !requiredRoles.includes(userRole)) {
+                alert('You do not have permission to view this page.');
+                renderPage('dashboard');
+                return false;
+            }
+            return true;
+        }
+
+        /**
+         * Handles user logout, clearing tokens and redirecting to login.
+         */
+        async function logout() {
+            try {
+                const refreshToken = localStorage.getItem('refresh_token');
+                if (refreshToken) {
+                    await apiCall('/auth/logout', 'POST', { refresh_token: refreshToken });
+                }
+            } catch (error) {
+                console.warn('Logout failed on backend (might be expired token, or not faculty/admin):', error.message);
+            } finally {
+                localStorage.clear();
+                alert('You have been logged out.');
+                renderPage('login');
+                updateNavigation();
+            }
+        }
+
+        /**
+         * Helper to format ISO string to local readable date/time.
+         * @param {string|null} isoString - ISO date string.
+         * @returns {string} - Formatted date/time or 'N/A'.
+         */
+        function formatDateTime(isoString) {
+            return isoString ? new Date(isoString).toLocaleString() : 'N/A';
+        }
+
+        /**
+         * Converts local datetime-local input value to ISO string.
+         * @param {string} localDateTimeString - Value from datetime-local input.
+         * @returns {string|null} - ISO string or null.
+         */
+        function toISOStringFromLocal(localDateTimeString) {
+            if (!localDateTimeString) return null;
+            // datetime-local gives YYYY-MM-DDTHH:MM. We need to append :00.000Z for ISO 8601 UTC if backend expects that,
+            // or let the backend parse it as local time based on server's timezone.
+            // For simplicity, we'll append :00 and let backend interpret.
+            return new Date(localDateTimeString).toISOString();
+        }
+
+        /**
+         * Converts ISO string to local datetime-local format for input fields.
+         * @param {string|null} isoString - ISO date string.
+         * @returns {string|null} - Formatted string for datetime-local input or null.
+         */
+        function toLocalDateTimeString(isoString) {
+            if (!isoString) return null;
+            const date = new Date(isoString);
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
+        // --- Navigation and Page Rendering ---
+
+        /**
+         * Updates navigation buttons visibility and active state based on login and role.
+         */
+        function updateNavigation() {
+            const token = localStorage.getItem('access_token');
+            const userRole = localStorage.getItem('user_role');
+
+            const loggedInButtons = ['navDashboard', 'navAnnouncements', 'navQuestions', 'navCommittees', 'navLocations', 'navAttendance', 'logoutBtn'];
+            loggedInButtons.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.style.display = token ? 'inline-block' : 'none';
+            });
+
+            // Role-based navigation
+            document.getElementById('navVolunteers').style.display = (token && userRole === 'admin') ? 'inline-block' : 'none';
+            // Specific button visibility based on role for Attendance/Committees/Locations could be more granular if needed
+
+            // Clear active state and set for current page
+            Array.from(mainNav.children).forEach(button => button.classList.remove('active'));
+            const currentPage = window.location.hash.replace('#', '');
+            if (currentPage) {
+                const navButton = document.getElementById(`nav${currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}`);
+                if (navButton) navButton.classList.add('active');
+            } else if (token) { // If logged in but no hash, default to dashboard active
+                 document.getElementById('navDashboard').classList.add('active');
+            }
+        }
+
+        /**
+         * Renders the appropriate page content into the app-container.
+         * @param {string} pageName - The name of the page to render (e.g., 'dashboard', 'login').
+         */
+        async function renderPage(pageName) {
+            appContainer.innerHTML = '<p class="info" style="text-align: center;">Loading page content...</p>';
+            window.location.hash = pageName;
+            updateNavigation();
+
+            const token = localStorage.getItem('access_token');
+
+            // --- Pages accessible when NOT logged in ---
+            if (!token) {
+                if (pageName === 'register') {
+                    renderRegisterVolunteerForm();
+                } else {
+                    renderLoginForm(); // Default to login if not authenticated
+                }
+                return;
+            }
+
+            // --- Pages accessible when logged in ---
+            // General auth check for all logged-in pages
+            if (!checkAuthAndRedirect([])) return;
+
+            const userRole = localStorage.getItem('user_role');
+
+            switch (pageName) {
+                case 'dashboard':
+                    renderDashboard(userRole);
+                    break;
+                case 'announcements':
+                    renderAnnouncementsPage(userRole);
+                    break;
+                case 'questions':
+                    renderQuestionsPage(userRole);
+                    break;
+                case 'committees':
+                    renderCommitteesPage(userRole);
+                    break;
+                case 'locations':
+                    renderLocationsPage(userRole);
+                    break;
+                case 'attendance':
+                    renderAttendancePage(userRole);
+                    break;
+                case 'volunteers':
+                    if (userRole === 'admin') {
+                        renderVolunteersPage();
+                    } else {
+                        alert('Access Denied: Only Admins can view this page.');
+                        renderPage('dashboard');
+                    }
+                    break;
+                default:
+                    renderDashboard(userRole); // Default logged-in view
+                    break;
+            }
+        }
+
+        // --- Generic Modal Handling ---
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'block';
+                currentModalInstance = modalId;
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+                currentModalInstance = null;
+            }
+        }
+
+        // --- AUTH Views and Handlers ---
+
+        function renderLoginForm() {
+            appContainer.innerHTML = `
+                <h2>Login to Seva App</h2>
+                <section>
+                    <form id="loginForm">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" required>
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" required>
+                        <button type="submit" class="action-button">Login</button>
+                    </form>
+                    <p id="message" class="error"></p>
+                    <p>Don't have an account? <button class="action-button" onclick="renderPage('register')">Register as a Volunteer</button></p>
+                    <hr>
+                    <p>Admin/Faculty can also register here (Requires existing Admin login):</p>
+                    <form id="registerFacultyForm">
+                        <h3>Register Faculty/Admin (Admin Only)</h3>
+                        <label for="regFacName">Name:</label>
+                        <input type="text" id="regFacName">
+                        <label for="regFacEmail">Email:</label>
+                        <input type="email" id="regFacEmail">
+                        <label for="regFacPassword">Password (min 8 chars):</label>
+                        <input type="password" id="regFacPassword" minlength="8">
+                        <label for="regFacRole">Role:</label>
+                        <select id="regFacRole">
+                            <option value="faculty">Faculty</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                        <button type="submit" class="action-button">Register Faculty/Admin</button>
+                    </form>
+                    <p id="facultyRegMessage"></p>
+                </section>
+            `;
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('registerFacultyForm').addEventListener('submit', handleRegisterFaculty);
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const messageElem = document.getElementById('message');
+
+            try {
+                const response = await apiCall('/auth/login', 'POST', { email, password });
+                localStorage.setItem('access_token', response.access_token);
+                if (response.refresh_token) {
+                    localStorage.setItem('refresh_token', response.refresh_token);
+                }
+                localStorage.setItem('user_role', response.role);
+                localStorage.setItem('user_id', response.user_id);
+                renderPage('dashboard');
+            } catch (error) {
+                messageElem.textContent = error.message || 'Login failed.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        function renderRegisterVolunteerForm() {
+            appContainer.innerHTML = `
+                <h2>Register as a Volunteer</h2>
+                <section>
+                    <form id="registerVolunteerForm">
+                        <label for="name">Name:</label>
+                        <input type="text" id="name" required>
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" required>
+                        <label for="password">Password (min 8 chars):</label>
+                        <input type="password" id="password" required minlength="8">
+                        <label for="phone">Phone (Optional):</label>
+                        <input type="tel" id="phone">
+                        <label for="dept">Department (Optional):</label>
+                        <input type="text" id="dept">
+                        <label for="college_id">College ID (Optional):</label>
+                        <input type="text" id="college_id">
+                        <button type="submit" class="action-button">Register</button>
+                    </form>
+                    <p id="message" class="error"></p>
+                    <p>Already have an account? <button class="action-button" onclick="renderPage('login')">Login here</button></p>
+                </section>
+            `;
+            document.getElementById('registerVolunteerForm').addEventListener('submit', handleRegisterVolunteer);
+        }
+
+        async function handleRegisterVolunteer(e) {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const phone = document.getElementById('phone').value || null;
+            const dept = document.getElementById('dept').value || null;
+            const college_id = document.getElementById('college_id').value || null;
+            const messageElem = document.getElementById('message');
+
+            try {
+                await apiCall('/auth/register/volunteer', 'POST', { name, email, password, phone, dept, college_id });
+                messageElem.textContent = 'Registration successful! You can now log in.';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                document.getElementById('registerVolunteerForm').reset();
+            } catch (error) {
+                messageElem.textContent = error.message || 'Registration failed.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function handleRegisterFaculty(e) {
+            e.preventDefault();
+            if (!checkAuthAndRedirect(['admin'])) return; // Admin must be logged in
+
+            const name = document.getElementById('regFacName').value;
+            const email = document.getElementById('regFacEmail').value;
+            const password = document.getElementById('regFacPassword').value;
+            const role = document.getElementById('regFacRole').value;
+            const messageElem = document.getElementById('facultyRegMessage');
+
+            try {
+                await apiCall('/auth/register/faculty', 'POST', { name, email, password, role }, true);
+                messageElem.textContent = 'Faculty/Admin account created successfully!';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                document.getElementById('registerFacultyForm').reset();
+            } catch (error) {
+                messageElem.textContent = error.message || 'Failed to create Faculty/Admin account.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        // --- DASHBOARD Views and Handlers ---
+
+        function renderDashboard(userRole) {
+            const userId = localStorage.getItem('user_id');
+            appContainer.innerHTML = `
+                <h2>Welcome, <span id="userName">User</span>!</h2>
+                <p>Your Role: <span id="userRole">${userRole}</span></p>
+
+                <div class="dashboard-grid">
+                    <section id="myProfileSection" class="dashboard-card" style="display: none;">
+                        <h3>My Profile</h3>
+                        <p><strong>Name:</strong> <span id="profileName"></span></p>
+                        <p><strong>Email:</strong> <span id="profileEmail"></span></p>
+                        <p><strong>Phone:</strong> <span id="profilePhone"></span></p>
+                        <p><strong>Department:</strong> <span id="profileDept"></span></p>
+                        <p><strong>College ID:</strong> <span id="profileCollegeId"></span></p>
+                        <button id="setPasswordBtn" class="action-button">Set/Change Password</button>
+                        <form id="passwordForm" style="display: none;">
+                            <h4>Update Password</h4>
+                            <label for="oldPassword">Old Password (if set):</label>
+                            <input type="password" id="oldPassword">
+                            <label for="newPassword">New Password (min 8 chars):</label>
+                            <input type="password" id="newPassword" required minlength="8">
+                            <button type="submit" class="action-button">Update Password</button>
+                            <p id="passwordMessage"></p>
+                        </form>
+                    </section>
+                    
+                    <section id="myAssignmentsSection" class="dashboard-card" style="display: none;">
+                        <h3>My Assignments</h3>
+                        <table id="myAssignmentsTable">
+                            <thead>
+                                <tr>
+                                    <th>Event</th><th>Committee</th><th>Role</th><th>Status</th>
+                                    <th>Reporting Time</th><th>Shift</th><th>Start Time</th><th>End Time</th><th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </section>
+                    
+                     <section id="myCommitteesSection" class="dashboard-card" style="display: none;">
+                        <h3>My Committees</h3>
+                        <table id="myCommitteesTable">
+                            <thead>
+                                <tr>
+                                    <th>Event</th><th>Committee Name</th><th>Description</th><th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </section>
+                </div>
+            `;
+            document.getElementById('setPasswordBtn').addEventListener('click', () => {
+                const passwordForm = document.getElementById('passwordForm');
+                passwordForm.style.display = passwordForm.style.display === 'none' ? 'block' : 'none';
+            });
+            document.getElementById('passwordForm').addEventListener('submit', handleSetMyPassword);
+
+            if (userRole === 'volunteer' || userRole === 'admin') {
+                document.getElementById('myProfileSection').style.display = 'block';
+                document.getElementById('myAssignmentsSection').style.display = 'block';
+                document.getElementById('myCommitteesSection').style.display = 'block';
+                loadVolunteerProfile(userId);
+                loadMyAssignments(userId);
+                loadMyCommittees(userId);
+            }
+        }
+
+        async function loadVolunteerProfile(id) {
+            try {
+                const profile = await apiCall(`/volunteers/me`, 'GET', null, true);
+                document.getElementById('userName').textContent = profile.name;
+                document.getElementById('profileName').textContent = profile.name;
+                document.getElementById('profileEmail').textContent = profile.email || 'N/A';
+                document.getElementById('profilePhone').textContent = profile.phone || 'N/A';
+                document.getElementById('profileDept').textContent = profile.dept || 'N/A';
+                document.getElementById('profileCollegeId').textContent = profile.college_id || 'N/A';
+            } catch (error) {
+                console.error('Failed to load volunteer profile:', error);
+                const profileSection = document.getElementById('myProfileSection');
+                if (profileSection) profileSection.innerHTML = `<p class="error">Failed to load profile: ${error.message}</p>`;
+            }
+        }
+
+        async function handleSetMyPassword(e) {
+            e.preventDefault();
+            const oldPassword = document.getElementById('oldPassword').value || null;
+            const newPassword = document.getElementById('newPassword').value;
+            const passwordMessageElem = document.getElementById('passwordMessage');
+
+            const payload = { new_password: newPassword };
+            if (oldPassword) {
+                payload.old_password = oldPassword;
+            }
+
+            try {
+                await apiCall('/volunteers/me/set-password', 'POST', payload, true);
+                passwordMessageElem.textContent = 'Password updated successfully!';
+                passwordMessageElem.className = 'success';
+                document.getElementById('passwordForm').reset();
+                document.getElementById('passwordForm').style.display = 'none';
+            } catch (error) {
+                passwordMessageElem.textContent = error.message || 'Failed to update password.';
+                passwordMessageElem.className = 'error';
+            }
+        }
+
+        async function loadMyAssignments(id) {
+            try {
+                const assignments = await apiCall(`/volunteers/me/assignments`, 'GET', null, true);
+                const tbody = document.getElementById('myAssignmentsTable').querySelector('tbody');
+                tbody.innerHTML = '';
+                if (assignments.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9">No assignments found.</td></tr>';
+                    return;
+                }
+                assignments.forEach(assign => {
+                    const row = tbody.insertRow();
+                    row.insertCell().textContent = assign.event_name || 'N/A';
+                    row.insertCell().textContent = assign.committee_name || 'N/A';
+                    row.insertCell().textContent = assign.role;
+                    row.insertCell().textContent = assign.status;
+                    row.insertCell().textContent = formatDateTime(assign.reporting_time);
+                    row.insertCell().textContent = assign.shift || 'N/A';
+                    row.insertCell().textContent = formatDateTime(assign.start_time);
+                    row.insertCell().textContent = formatDateTime(assign.end_time);
+                    row.insertCell().textContent = assign.notes || 'N/A';
+                });
+            } catch (error) {
+                console.error('Failed to load my assignments:', error);
+                const assignmentsSection = document.getElementById('myAssignmentsSection');
+                if (assignmentsSection) assignmentsSection.innerHTML = `<p class="error">Failed to load assignments: ${error.message}</p>`;
+            }
+        }
+
+        async function loadMyCommittees(id) {
+            try {
+                const committees = await apiCall(`/volunteers/me/committees`, 'GET', null, true);
+                const tbody = document.getElementById('myCommitteesTable').querySelector('tbody');
+                tbody.innerHTML = '';
+                if (committees.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4">No committees found.</td></tr>';
+                    return;
+                }
+                committees.forEach(comm => {
+                    const row = tbody.insertRow();
+                    row.insertCell().textContent = comm.event_name || 'N/A';
+                    row.insertCell().textContent = comm.name;
+                    row.insertCell().textContent = comm.description || 'N/A';
+                    row.insertCell().textContent = formatDateTime(comm.created_at);
+                });
+            } catch (error) {
+                console.error('Failed to load my committees:', error);
+                const committeesSection = document.getElementById('myCommitteesSection');
+                if (committeesSection) committeesSection.innerHTML = `<p class="error">Failed to load committees: ${error.message}</p>`;
+            }
+        }
+
+        // --- ANNOUNCEMENTS Views and Handlers ---
+
+        function renderAnnouncementsPage(userRole) {
+            appContainer.innerHTML = `
+                <h2 id="announcementListTitle">Announcements</h2>
+                <section id="createAnnouncementSection" style="display: none;">
+                    <h3>Create New Announcement</h3>
+                    <button class="action-button" onclick="openAnnouncementModal('create')">Create New</button>
+                    <p id="createAnnounceMessage"></p>
+                </section>
+
+                <h3>List of Announcements</h3>
+                <table id="announcementsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Event ID</th><th>Committee</th><th>Title</th><th>Body</th>
+                            <th>Priority</th><th>Created By</th><th>Created At</th><th>Expires At</th>
+                            <th class="admin-actions-header" style="display: none;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <p id="announcementMessage"></p>
+            `;
+
+            document.getElementById('announcementListTitle').textContent =
+                (userRole === 'volunteer') ? 'My Relevant Announcements' : 'All Announcements';
+
+            if (userRole === 'admin') {
+                document.getElementById('createAnnouncementSection').style.display = 'block';
+                Array.from(document.getElementsByClassName('admin-actions-header')).forEach(el => el.style.display = 'table-cell');
+            }
+            loadAnnouncements(userRole);
+        }
+
+        async function loadAnnouncements(userRole) {
+            const tableBody = document.getElementById('announcementsTable').querySelector('tbody');
+            tableBody.innerHTML = '<tr><td colspan="10">Loading announcements...</td></tr>';
+            const messageElem = document.getElementById('announcementMessage');
+            messageElem.textContent = '';
+
+            let endpoint = '/announcements';
+            let queryParams = '';
+            if (userRole === 'volunteer') {
+                endpoint = '/announcements/me';
+                queryParams = '?active_only=true';
+            }
+
+            try {
+                const announcements = await apiCall(`${endpoint}${queryParams}`, 'GET', null, true);
+                tableBody.innerHTML = '';
+
+                if (announcements.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="10">No announcements found.</td></tr>';
+                    return;
+                }
+
+                announcements.forEach(ann => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = ann.id;
+                    row.insertCell().textContent = ann.event_id;
+                    row.insertCell().textContent = ann.committee_name || 'N/A';
+                    row.insertCell().textContent = ann.title;
+                    row.insertCell().textContent = ann.body;
+                    row.insertCell().textContent = ann.priority;
+                    row.insertCell().textContent = ann.created_by_name || `ID: ${ann.created_by || 'N/A'}`;
+                    row.insertCell().textContent = formatDateTime(ann.created_at);
+                    row.insertCell().textContent = ann.expires_at ? formatDateTime(ann.expires_at) : 'Never';
+
+                    if (userRole === 'admin') {
+                        const actionsCell = row.insertCell();
+                        actionsCell.classList.add('admin-actions-cell');
+                        const editBtn = document.createElement('button');
+                        editBtn.textContent = 'Edit';
+                        editBtn.onclick = () => openAnnouncementModal('edit', ann);
+                        actionsCell.appendChild(editBtn);
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.textContent = 'Delete';
+                        deleteBtn.classList.add('delete-btn');
+                        deleteBtn.onclick = () => deleteAnnouncement(ann.id);
+                        actionsCell.appendChild(deleteBtn);
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load announcements:', error);
+                messageElem.textContent = `Failed to load announcements: ${error.message}`;
+                messageElem.classList.add('error');
+                tableBody.innerHTML = '<tr><td colspan="10">Failed to load announcements.</td></tr>';
+            }
+        }
+
+        function openAnnouncementModal(mode, data = {}) {
+            const modal = document.getElementById('announcementModal');
+            const form = document.getElementById('announcementForm');
+            const titleElem = document.getElementById('announcementModalTitle');
+            const messageElem = document.getElementById('announcementModalMessage');
+            messageElem.textContent = ''; // Clear previous messages
+
+            document.getElementById('announcementId').value = data.id || '';
+            document.getElementById('announcementEventId').value = data.event_id || '';
+            document.getElementById('announcementCommitteeId').value = data.committee_id || '';
+            document.getElementById('announcementTitle').value = data.title || '';
+            document.getElementById('announcementBody').value = data.body || '';
+            document.getElementById('announcementPriority').value = data.priority || 'normal';
+            document.getElementById('announcementExpiresAt').value = toLocalDateTimeString(data.expires_at) || '';
+
+            titleElem.textContent = mode === 'create' ? 'Create New Announcement' : `Edit Announcement ID ${data.id}`;
+            form.onsubmit = (e) => (mode === 'create' ? handleCreateAnnouncement(e) : handleUpdateAnnouncement(e));
+            openModal('announcementModal');
+        }
+
+        function closeAnnouncementModal() {
+            closeModal('announcementModal');
+            document.getElementById('announcementForm').reset();
+            document.getElementById('announcementForm').onsubmit = null;
+        }
+
+        async function handleCreateAnnouncement(e) {
+            e.preventDefault();
+            const messageElem = document.getElementById('announcementModalMessage');
+            const event_id = parseInt(document.getElementById('announcementEventId').value);
+            const committee_id_val = document.getElementById('announcementCommitteeId').value;
+            const committee_id = committee_id_val ? parseInt(committee_id_val) : null;
+            const title = document.getElementById('announcementTitle').value;
+            const body = document.getElementById('announcementBody').value;
+            const priority = document.getElementById('announcementPriority').value;
+            const expires_at_val = document.getElementById('announcementExpiresAt').value;
+            const expires_at = expires_at_val ? toISOStringFromLocal(expires_at_val) : null;
+
+            const payload = { event_id, title, body, priority };
+            if (committee_id !== null) payload.committee_id = committee_id;
+            if (expires_at !== null) payload.expires_at = expires_at;
+
+            try {
+                await apiCall('/announcements', 'POST', payload, true);
+                messageElem.textContent = 'Announcement created successfully!';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                closeAnnouncementModal();
+                loadAnnouncements(localStorage.getItem('user_role'));
+            } catch (error) {
+                messageElem.textContent = error.message || 'Failed to create announcement.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function handleUpdateAnnouncement(e) {
+            e.preventDefault();
+            const messageElem = document.getElementById('announcementModalMessage');
+            const id = document.getElementById('announcementId').value;
+            const committee_id_val = document.getElementById('announcementCommitteeId').value;
+            const committee_id = committee_id_val ? parseInt(committee_id_val) : null;
+            const title = document.getElementById('announcementTitle').value;
+            const body = document.getElementById('announcementBody').value;
+            const priority = document.getElementById('announcementPriority').value;
+            const expires_at_val = document.getElementById('announcementExpiresAt').value;
+            const expires_at = expires_at_val ? toISOStringFromLocal(expires_at_val) : null;
+
+            const payload = { title: title, body: body, priority: priority };
+            payload.committee_id = committee_id; // Always send, even if null, for updates
+            payload.expires_at = expires_at; // Always send, even if null
+
+            try {
+                await apiCall(`/announcements/${id}`, 'PUT', payload, true);
+                messageElem.textContent = 'Announcement updated successfully!';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                closeAnnouncementModal();
+                loadAnnouncements(localStorage.getItem('user_role'));
+            } catch (error) {
+                messageElem.textContent = error.message || 'Failed to update announcement.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function deleteAnnouncement(id) {
+            if (!confirm(`Are you sure you want to delete announcement ID ${id}?`)) {
+                return;
+            }
+            const messageElem = document.getElementById('announcementMessage');
+            try {
+                await apiCall(`/announcements/${id}`, 'DELETE', null, true);
+                messageElem.textContent = `Announcement ${id} deleted successfully.`;
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                loadAnnouncements(localStorage.getItem('user_role'));
+            } catch (error) {
+                messageElem.textContent = error.message || `Failed to delete announcement ${id}.`;
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        // --- VOLUNTEERS Views and Handlers ---
+
+        function renderVolunteersPage() {
+            if (!checkAuthAndRedirect(['admin'])) return;
+            appContainer.innerHTML = `
+                <h2>Manage Volunteers & Assignments</h2>
+                <section>
+                    <h3>Volunteer Records</h3>
+                    <div class="flex-container">
+                        <button class="action-button" onclick="openVolunteerModal('create')">Create New Volunteer</button>
+                        <button class="action-button" onclick="toggleSection('bulkUploadSection')">Bulk Upload Volunteers</button>
+                        <button class="action-button" onclick="toggleSection('volunteerExportSection')">Export Volunteer Data</button>
+                    </div>
+
+                    <div id="bulkUploadSection" style="display: none;">
+                        <h4>Bulk Upload Volunteers & Assignments</h4>
+                        <form id="bulkUploadForm">
+                            <label for="bulkEventId">Event ID:</label>
+                            <input type="number" id="bulkEventId" required>
+                            <label for="bulkCommitteeId">Committee ID:</label>
+                            <input type="number" id="bulkCommitteeId" required>
+                            <label for="csvFile">CSV File (Header: name,email,phone,dept,college_id,reporting_time_iso,shift,start_time_iso,end_time_iso,role,status,notes):</label>
+                            <input type="file" id="csvFile" accept=".csv" required>
+                            <button type="submit" class="action-button">Upload CSV</button>
+                        </form>
+                        <p id="bulkUploadMessage"></p>
+                    </div>
+
+                    <div id="volunteerExportSection" style="display: none;">
+                        <h4>Export Volunteer Data</h4>
+                        <button class="action-button" id="exportVolunteersBtn">Export All Volunteers CSV</button>
+                        <button class="action-button" id="exportAssignmentsBtn">Export All Assignments CSV</button>
+                    </div>
+
+                    <h3>All Volunteers</h3>
+                    <table id="volunteersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Dept</th>
+                                <th>College ID</th><th>Created At</th><th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <p id="volunteersMessage"></p>
+                </section>
+
+                <section>
+                    <h3>Volunteer Assignments</h3>
+                    <div class="flex-container">
+                        <button class="action-button" onclick="openAssignmentModal('create')">Create New Assignment</button>
+                    </div>
+                    
+                    <h4>Filter Assignments</h4>
+                    <form id="filterAssignmentsForm" class="flex-container">
+                        <input type="number" id="filterEventId" placeholder="Event ID">
+                        <input type="number" id="filterCommitteeId" placeholder="Committee ID">
+                        <input type="number" id="filterVolunteerId" placeholder="Volunteer ID">
+                        <button type="submit" class="action-button">Filter</button>
+                        <button type="button" class="action-button" onclick="resetAssignmentFilters()">Reset</button>
+                    </form>
+
+                    <table id="assignmentsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Event</th><th>Committee</th><th>Volunteer</th><th>Role</th>
+                                <th>Status</th><th>Reporting Time</th><th>Shift</th><th>Start Time</th>
+                                <th>End Time</th><th>Notes</th><th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <p id="assignmentsMessage"></p>
+                </section>
+            `;
+            // Attach all necessary event listeners after rendering
+            document.getElementById('bulkUploadForm').addEventListener('submit', handleBulkUploadVolunteers);
+            document.getElementById('exportVolunteersBtn').addEventListener('click', handleExportVolunteersCSV);
+            document.getElementById('exportAssignmentsBtn').addEventListener('click', handleExportAssignmentsCSV);
+            document.getElementById('filterAssignmentsForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                loadAssignments();
+            });
+
+            loadVolunteers();
+            loadAssignments();
+        }
+
+        // Toggle visibility of sections (used for bulk upload, export)
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.style.display = section.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        async function loadVolunteers() {
+            const tableBody = document.getElementById('volunteersTable').querySelector('tbody');
+            tableBody.innerHTML = '<tr><td colspan="8">Loading volunteers...</td></tr>';
+            const messageElem = document.getElementById('volunteersMessage');
+            messageElem.textContent = '';
+
+            try {
+                const volunteers = await apiCall('/volunteers', 'GET', null, true);
+                tableBody.innerHTML = '';
+
+                if (volunteers.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="8">No volunteers found.</td></tr>';
+                    return;
+                }
+
+                volunteers.forEach(vol => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = vol.id;
+                    row.insertCell().textContent = vol.name;
+                    row.insertCell().textContent = vol.email || 'N/A';
+                    row.insertCell().textContent = vol.phone || 'N/A';
+                    row.insertCell().textContent = vol.dept || 'N/A';
+                    row.insertCell().textContent = vol.college_id || 'N/A';
+                    row.insertCell().textContent = formatDateTime(vol.created_at);
+
+                    const actionsCell = row.insertCell();
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = 'Edit';
+                    editBtn.onclick = () => openVolunteerModal('edit', vol);
+                    actionsCell.appendChild(editBtn);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Delete';
+                    deleteBtn.classList.add('delete-btn');
+                    deleteBtn.onclick = () => deleteVolunteer(vol.id, vol.name);
+                    actionsCell.appendChild(deleteBtn);
+                });
+            } catch (error) {
+                console.error('Failed to load volunteers:', error);
+                messageElem.textContent = `Failed to load volunteers: ${error.message}`;
+                messageElem.classList.add('error');
+                tableBody.innerHTML = '<tr><td colspan="8">Failed to load volunteers.</td></tr>';
+            }
+        }
+
+        function openVolunteerModal(mode, data = {}) {
+            const modal = document.getElementById('volunteerModal');
+            const form = document.getElementById('volunteerForm');
+            const titleElem = document.getElementById('volunteerModalTitle');
+            const messageElem = document.getElementById('volModalMessage');
+            messageElem.textContent = '';
+
+            document.getElementById('volId').value = data.id || '';
+            document.getElementById('volName').value = data.name || '';
+            document.getElementById('volEmail').value = data.email || '';
+            document.getElementById('volPhone').value = data.phone || '';
+            document.getElementById('volDept').value = data.dept || '';
+            document.getElementById('volCollegeID').value = data.college_id || '';
+            document.getElementById('volPassword').value = ''; // Password always starts empty
+
+            titleElem.textContent = mode === 'create' ? 'Create New Volunteer' : `Edit Volunteer ID ${data.id}`;
+            form.onsubmit = (e) => (mode === 'create' ? handleCreateSingleVolunteer(e) : handleUpdateVolunteer(e));
+            openModal('volunteerModal');
+        }
+
+        function closeVolunteerModal() {
+            closeModal('volunteerModal');
+            document.getElementById('volunteerForm').reset();
+            document.getElementById('volunteerForm').onsubmit = null;
+        }
+
+        async function handleCreateSingleVolunteer(e) {
+            e.preventDefault();
+            const messageElem = document.getElementById('volModalMessage');
+            const name = document.getElementById('volName').value;
+            const email = document.getElementById('volEmail').value || null;
+            const phone = document.getElementById('volPhone').value || null;
+            const dept = document.getElementById('volDept').value || null;
+            const college_id = document.getElementById('volCollegeID').value || null;
+            const password = document.getElementById('volPassword').value || null;
+
+            const payload = { name };
+            if (email) payload.email = email;
+            if (phone) payload.phone = phone;
+            if (dept) payload.dept = dept;
+            if (college_id) payload.college_id = college_id;
+            if (password) payload.password = password;
+
+            try {
+                await apiCall('/volunteers', 'POST', payload, true);
+                messageElem.textContent = 'Volunteer created successfully!';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                closeVolunteerModal();
+                loadVolunteers();
+            } catch (error) {
+                messageElem.textContent = error.message || 'Failed to create volunteer.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function handleUpdateVolunteer(e) {
+            e.preventDefault();
+            const messageElem = document.getElementById('volModalMessage');
+            const id = document.getElementById('volId').value;
+            const name = document.getElementById('volName').value;
+            const email = document.getElementById('volEmail').value || null;
+            const phone = document.getElementById('volPhone').value || null;
+            const dept = document.getElementById('volDept').value || null;
+            const college_id = document.getElementById('volCollegeID').value || null;
+            const password = document.getElementById('volPassword').value || null;
+
+            const payload = { name: name };
+            payload.email = email; // Explicitly send null if cleared
+            payload.phone = phone;
+            payload.dept = dept;
+            payload.college_id = college_id;
+            if (password) payload.password = password;
+
+            try {
+                await apiCall(`/volunteers/${id}`, 'PUT', payload, true);
+                messageElem.textContent = 'Volunteer updated successfully!';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                closeVolunteerModal();
+                loadVolunteers();
+            } catch (error) {
+                messageElem.textContent = error.message || 'Failed to update volunteer.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function deleteVolunteer(id, name) {
+            if (!confirm(`Are you sure you want to delete volunteer "${name}" (ID: ${id})?`)) {
+                return;
+            }
+            const messageElem = document.getElementById('volunteersMessage');
+            try {
+                await apiCall(`/volunteers/${id}`, 'DELETE', null, true);
+                messageElem.textContent = `Volunteer ${id} deleted successfully.`;
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                loadVolunteers();
+                loadAssignments(); // Assignments might be affected
+            } catch (error) {
+                messageElem.textContent = error.message || `Failed to delete volunteer ${id}.`;
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function handleBulkUploadVolunteers(e) {
+            e.preventDefault();
+            const messageElem = document.getElementById('bulkUploadMessage');
+            const eventId = document.getElementById('bulkEventId').value;
+            const committeeId = document.getElementById('bulkCommitteeId').value;
+            const csvFile = document.getElementById('csvFile').files[0];
+
+            if (!csvFile) {
+                messageElem.textContent = 'Please select a CSV file.';
+                messageElem.classList.add('error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', csvFile);
+
+            try {
+                const response = await apiCall(`/volunteers/bulk?event_id=${eventId}&committee_id=${committeeId}`, 'POST', formData, true, 'multipart/form-data');
+                messageElem.textContent = `Bulk upload successful! Created volunteers: ${response.created_volunteers}, Created/Updated assignments: ${response.created_assignments}. Errors: ${response.errors.length}`;
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                if (response.errors && response.errors.length > 0) {
+                     const errorDetails = response.errors.map(err => `Line ${err.line}: ${err.error}`).join('\n');
+                     alert('Errors encountered during bulk upload:\n' + errorDetails);
+                }
+                document.getElementById('bulkUploadForm').reset();
+                loadVolunteers();
+                loadAssignments();
+            } catch (error) {
+                messageElem.textContent = error.message || 'Bulk upload failed.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function handleExportVolunteersCSV() {
+            try {
+                const response = await apiCall('/volunteers/export_csv', 'GET', null, true, 'text/csv');
+                downloadFile(response, 'volunteers_export.csv', 'text/csv');
+            } catch (error) {
+                const messageElem = document.getElementById('volunteersMessage');
+                messageElem.textContent = error.message || 'Failed to export volunteers.';
+                messageElem.classList.add('error');
+            }
+        }
+
+        async function handleExportAssignmentsCSV() {
+            try {
+                const response = await apiCall('/volunteers/assignments/export_csv', 'GET', null, true, 'text/csv');
+                downloadFile(response, 'volunteer_assignments_export.csv', 'text/csv');
+            } catch (error) {
+                const messageElem = document.getElementById('assignmentsMessage');
+                messageElem.textContent = error.message || 'Failed to export assignments.';
+                messageElem.classList.add('error');
+            }
+        }
+
+        function downloadFile(data, filename, type) {
+            const blob = new Blob([data], { type: type });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        async function loadAssignments() {
+            const tableBody = document.getElementById('assignmentsTable').querySelector('tbody');
+            tableBody.innerHTML = '<tr><td colspan="12">Loading assignments...</td></tr>';
+            const messageElem = document.getElementById('assignmentsMessage');
+            messageElem.textContent = '';
+
+            const eventId = document.getElementById('filterEventId')?.value || '1';
+            const committeeId = document.getElementById('filterCommitteeId')?.value || '1';
+            const volunteerId = document.getElementById('filterVolunteerId')?.value || '1';
+
+            let queryParams = `?event_id=${eventId}&committee_id=${committeeId}&volunteer_id=${volunteerId}`;
+
+            try {
+                const assignments = await apiCall(`/volunteers/assignments`, 'GET', null, true);
+                tableBody.innerHTML = '';
+
+                if (assignments.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="12">No assignments found.</td></tr>';
+                    return;
+                }
+
+                assignments.forEach(assign => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = assign.id;
+                    row.insertCell().textContent = assign.event_name || 'N/A';
+                    row.insertCell().textContent = assign.committee_name || 'N/A';
+                    row.insertCell().textContent = assign.volunteer_name || `ID: ${assign.volunteer_id}`;
+                    row.insertCell().textContent = assign.role;
+                    row.insertCell().textContent = assign.status;
+                    row.insertCell().textContent = formatDateTime(assign.reporting_time);
+                    row.insertCell().textContent = assign.shift || 'N/A';
+                    row.insertCell().textContent = formatDateTime(assign.start_time);
+                    row.insertCell().textContent = formatDateTime(assign.end_time);
+                    row.insertCell().textContent = assign.notes || 'N/A';
+
+                    const actionsCell = row.insertCell();
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = 'Edit';
+                    editBtn.onclick = () => openAssignmentModal('edit', assign);
+                    actionsCell.appendChild(editBtn);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Delete';
+                    deleteBtn.classList.add('delete-btn');
+                    deleteBtn.onclick = () => deleteAssignment(assign.id);
+                    actionsCell.appendChild(deleteBtn);
+                });
+            } catch (error) {
+                console.error('Failed to load assignments:', error);
+                messageElem.textContent = `Failed to load assignments: ${error.message}`;
+                messageElem.classList.add('error');
+                tableBody.innerHTML = '<tr><td colspan="12">Failed to load assignments.</td></tr>';
+            }
+        }
+
+        function resetAssignmentFilters() {
+            document.getElementById('filterEventId').value = '';
+            document.getElementById('filterCommitteeId').value = '';
+            document.getElementById('filterVolunteerId').value = '';
+            loadAssignments();
+        }
+
+        function openAssignmentModal(mode, data = {}) {
+            const modal = document.getElementById('assignmentModal');
+            const form = document.getElementById('assignmentForm');
+            const titleElem = document.getElementById('assignmentModalTitle');
+            const messageElem = document.getElementById('assignmentModalMessage');
+            messageElem.textContent = '';
+
+            document.getElementById('assignmentId').value = data.id || '';
+            document.getElementById('assignmentEventId').value = data.event_id || '';
+            document.getElementById('assignmentCommitteeId').value = data.committee_id || '';
+            document.getElementById('assignmentVolunteerId').value = data.volunteer_id || '';
+            document.getElementById('assignmentRole').value = data.role || 'volunteer';
+            document.getElementById('assignmentStatus').value = data.status || 'assigned';
+            document.getElementById('assignmentReportingTime').value = toLocalDateTimeString(data.reporting_time) || '';
+            document.getElementById('assignmentShift').value = data.shift || '';
+            document.getElementById('assignmentStartTime').value = toLocalDateTimeString(data.start_time) || '';
+            document.getElementById('assignmentEndTime').value = toLocalDateTimeString(data.end_time) || '';
+            document.getElementById('assignmentNotes').value = data.notes || '';
+
+            titleElem.textContent = mode === 'create' ? 'Create New Assignment' : `Edit Assignment ID ${data.id}`;
+            form.onsubmit = (e) => (mode === 'create' ? handleCreateAssignment(e) : handleUpdateAssignment(e));
+            openModal('assignmentModal');
+        }
+
+        function closeAssignmentModal() {
+            closeModal('assignmentModal');
+            document.getElementById('assignmentForm').reset();
+            document.getElementById('assignmentForm').onsubmit = null;
+        }
+
+        async function handleCreateAssignment(e) {
+            e.preventDefault();
+            const messageElem = document.getElementById('assignmentModalMessage');
+            const event_id = parseInt(document.getElementById('assignmentEventId').value);
+            const committee_id = parseInt(document.getElementById('assignmentCommitteeId').value);
+            const volunteer_id = parseInt(document.getElementById('assignmentVolunteerId').value);
+            const role = document.getElementById('assignmentRole').value;
+            const status = document.getElementById('assignmentStatus').value;
+            const reporting_time = toISOStringFromLocal(document.getElementById('assignmentReportingTime').value);
+            const shift = document.getElementById('assignmentShift').value || null;
+            const start_time = toISOStringFromLocal(document.getElementById('assignmentStartTime').value);
+            const end_time = toISOStringFromLocal(document.getElementById('assignmentEndTime').value);
+            const notes = document.getElementById('assignmentNotes').value || null;
+
+            const payload = { event_id, committee_id, volunteer_id, role, status };
+            if (reporting_time) payload.reporting_time = reporting_time;
+            if (shift) payload.shift = shift;
+            if (start_time) payload.start_time = start_time;
+            if (end_time) payload.end_time = end_time;
+            if (notes) payload.notes = notes;
+
+            try {
+                await apiCall('/volunteers/assignments', 'POST', payload, true);
+                messageElem.textContent = 'Assignment created successfully!';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                closeAssignmentModal();
+                loadAssignments();
+            } catch (error) {
+                messageElem.textContent = error.message || 'Failed to create assignment.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function handleUpdateAssignment(e) {
+            e.preventDefault();
+            const messageElem = document.getElementById('assignmentModalMessage');
+            const id = document.getElementById('assignmentId').value;
+            const role = document.getElementById('assignmentRole').value;
+            const status = document.getElementById('assignmentStatus').value;
+            const reporting_time = toISOStringFromLocal(document.getElementById('assignmentReportingTime').value);
+            const shift = document.getElementById('assignmentShift').value || null;
+            const start_time = toISOStringFromLocal(document.getElementById('assignmentStartTime').value);
+            const end_time = toISOStringFromLocal(document.getElementById('assignmentEndTime').value);
+            const notes = document.getElementById('assignmentNotes').value || null;
+
+            const payload = { role: role, status: status };
+            payload.reporting_time = reporting_time;
+            payload.shift = shift;
+            payload.start_time = start_time;
+            payload.end_time = end_time;
+            payload.notes = notes;
+
+            try {
+                await apiCall(`/volunteers/assignments/${id}`, 'PUT', payload, true);
+                messageElem.textContent = 'Assignment updated successfully!';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                closeAssignmentModal();
+                loadAssignments();
+            } catch (error) {
+                messageElem.textContent = error.message || 'Failed to update assignment.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function deleteAssignment(id) {
+            if (!confirm(`Are you sure you want to delete assignment ID ${id}?`)) {
+                return;
+            }
+            const messageElem = document.getElementById('assignmentsMessage');
+            try {
+                await apiCall(`/volunteers/assignments/${id}`, 'DELETE', null, true);
+                messageElem.textContent = `Assignment ${id} deleted successfully.`;
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                loadAssignments();
+            } catch (error) {
+                messageElem.textContent = error.message || `Failed to delete assignment ${id}.`;
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        // --- COMMITTEES Views and Handlers ---
+
+        function renderCommitteesPage(userRole) {
+            appContainer.innerHTML = `
+                <h2>Committees</h2>
+                <section id="createCommitteeSection" style="display: none;">
+                    <h3>Create New Committee</h3>
+                    <button class="action-button" onclick="openCommitteeModal('create')">Create New</button>
+                </section>
+
+                <section>
+                    <h3>List of Committees</h3>
+                    <h4>Filter Committees</h4>
+                    <form id="filterCommitteesForm" class="flex-container">
+                        <input type="number" id="filterCommitteeEventId" placeholder="Event ID">
+                        <button type="submit" class="action-button">Filter</button>
+                        <button type="button" class="action-button" onclick="resetCommitteeFilters()">Reset</button>
+                    </form>
+
+                    <table id="committeesTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Event ID</th><th>Name</th><th>Description</th><th>Created At</th><th>Event Name</th>
+                                <th class="admin-actions-header" style="display: none;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <p id="committeesMessage"></p>
+                </section>
+            `;
+            if (userRole === 'admin') {
+                document.getElementById('createCommitteeSection').style.display = 'block';
+                Array.from(document.getElementsByClassName('admin-actions-header')).forEach(el => el.style.display = 'table-cell');
+            }
+            document.getElementById('filterCommitteesForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                loadCommittees(userRole);
+            });
+            loadCommittees(userRole);
+        }
+
+        async function loadCommittees(userRole) {
+            const tableBody = document.getElementById('committeesTable').querySelector('tbody');
+            tableBody.innerHTML = '<tr><td colspan="7">Loading committees...</td></tr>';
+            const messageElem = document.getElementById('committeesMessage');
+            messageElem.textContent = '';
+
+            const eventId = document.getElementById('filterCommitteeEventId')?.value || '';
+            const queryParams = eventId ? `?event_id=${eventId}` : '';
+
+            try {
+                const committees = await apiCall(`/committees${queryParams}`, 'GET', null, false); // Public endpoint
+                tableBody.innerHTML = '';
+
+                if (committees.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="7">No committees found.</td></tr>';
+                    return;
+                }
+
+                committees.forEach(comm => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = comm.id;
+                    row.insertCell().textContent = comm.event_id;
+                    row.insertCell().textContent = comm.name;
+                    row.insertCell().textContent = comm.description || 'N/A';
+                    row.insertCell().textContent = formatDateTime(comm.created_at);
+                    row.insertCell().textContent = comm.event_name || 'N/A';
+
+                    if (userRole === 'admin') {
+                        const actionsCell = row.insertCell();
+                        actionsCell.classList.add('admin-actions-cell');
+                        const editBtn = document.createElement('button');
+                        editBtn.textContent = 'Edit';
+                        editBtn.onclick = () => openCommitteeModal('edit', comm);
+                        actionsCell.appendChild(editBtn);
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.textContent = 'Delete';
+                        deleteBtn.classList.add('delete-btn');
+                        deleteBtn.onclick = () => deleteCommittee(comm.id, comm.name);
+                        actionsCell.appendChild(deleteBtn);
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load committees:', error);
+                messageElem.textContent = `Failed to load committees: ${error.message}`;
+                messageElem.classList.add('error');
+                tableBody.innerHTML = '<tr><td colspan="7">Failed to load committees.</td></tr>';
+            }
+        }
+
+        function resetCommitteeFilters() {
+            document.getElementById('filterCommitteeEventId').value = '';
+            loadCommittees(localStorage.getItem('user_role'));
+        }
+
+        function openCommitteeModal(mode, data = {}) {
+            const modal = document.getElementById('committeeModal');
+            const form = document.getElementById('committeeForm');
+            const titleElem = document.getElementById('committeeModalTitle');
+            const messageElem = document.getElementById('committeeModalMessage');
+            messageElem.textContent = '';
+
+            document.getElementById('committeeId').value = data.id || '';
+            document.getElementById('committeeEventId').value = data.event_id || '';
+            document.getElementById('committeeName').value = data.name || '';
+            document.getElementById('committeeDescription').value = data.description || '';
+
+            titleElem.textContent = mode === 'create' ? 'Create New Committee' : `Edit Committee ID ${data.id}`;
+            form.onsubmit = (e) => (mode === 'create' ? handleCreateCommittee(e) : handleUpdateCommittee(e));
+            openModal('committeeModal');
+        }
+
+        function closeCommitteeModal() {
+            closeModal('committeeModal');
+            document.getElementById('committeeForm').reset();
+            document.getElementById('committeeForm').onsubmit = null;
+        }
+
+        async function handleCreateCommittee(e) {
+            e.preventDefault();
+            const messageElem = document.getElementById('committeeModalMessage');
+            const event_id = parseInt(document.getElementById('committeeEventId').value);
+            const name = document.getElementById('committeeName').value;
+            const description = document.getElementById('committeeDescription').value || null;
+
+            const payload = { event_id, name };
+            if (description) payload.description = description;
+
+            try {
+                await apiCall('/committees', 'POST', payload, true);
+                messageElem.textContent = 'Committee created successfully!';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                closeCommitteeModal();
+                loadCommittees(localStorage.getItem('user_role'));
+            } catch (error) {
+                messageElem.textContent = error.message || 'Failed to create committee.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function handleUpdateCommittee(e) {
+            e.preventDefault();
+            const messageElem = document.getElementById('committeeModalMessage');
+            const id = document.getElementById('committeeId').value;
+            const name = document.getElementById('committeeName').value;
+            const description = document.getElementById('committeeDescription').value || null;
+
+            const payload = {};
+            if (name) payload.name = name;
+            payload.description = description;
+
+            try {
+                await apiCall(`/committees/${id}`, 'PUT', payload, true);
+                messageElem.textContent = 'Committee updated successfully!';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                closeCommitteeModal();
+                loadCommittees(localStorage.getItem('user_role'));
+            } catch (error) {
+                messageElem.textContent = error.message || 'Failed to update committee.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function deleteCommittee(id, name) {
+            if (!confirm(`Are you sure you want to delete committee "${name}" (ID: ${id})?`)) {
+                return;
+            }
+            const messageElem = document.getElementById('committeesMessage');
+            try {
+                await apiCall(`/committees/${id}`, 'DELETE', null, true);
+                messageElem.textContent = `Committee ${id} deleted successfully.`;
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                loadCommittees(localStorage.getItem('user_role'));
+            } catch (error) {
+                messageElem.textContent = error.message || `Failed to delete committee ${id}.`;
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        // --- LOCATIONS Views and Handlers ---
+
+        function renderLocationsPage(userRole) {
+            appContainer.innerHTML = `
+                <h2>Locations</h2>
+                <section id="createLocationSection" style="display: none;">
+                    <h3>Create New Location</h3>
+                    <button class="action-button" onclick="openLocationModal('create')">Create New</button>
+                </section>
+
+                <section>
+                    <h3>List of Locations</h3>
+                    <h4>Filter Locations</h4>
+                    <form id="filterLocationsForm" class="flex-container">
+                        <input type="number" id="filterLocationEventId" placeholder="Event ID">
+                        <button type="submit" class="action-button">Filter</button>
+                        <button type="button" class="action-button" onclick="resetLocationFilters()">Reset</button>
+                    </form>
+
+                    <table id="locationsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Event ID</th><th>Name</th><th>Type</th><th>Description</th>
+                                <th>Latitude</th><th>Longitude</th>
+                                <th class="admin-actions-header" style="display: none;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <p id="locationsMessage"></p>
+                </section>
+            `;
+            if (userRole === 'admin') {
+                document.getElementById('createLocationSection').style.display = 'block';
+                Array.from(document.getElementsByClassName('admin-actions-header')).forEach(el => el.style.display = 'table-cell');
+            }
+            document.getElementById('filterLocationsForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                loadLocations(userRole);
+            });
+            loadLocations(userRole);
+        }
+
+        async function loadLocations(userRole) {
+            const tableBody = document.getElementById('locationsTable').querySelector('tbody');
+            tableBody.innerHTML = '<tr><td colspan="8">Loading locations...</td></tr>';
+            const messageElem = document.getElementById('locationsMessage');
+            messageElem.textContent = '';
+
+            const eventId = document.getElementById('filterLocationEventId')?.value || '';
+            const queryParams = eventId ? `?event_id=${eventId}` : '';
+
+            try {
+                const locations = await apiCall(`/locations${queryParams}`, 'GET', null, false); // Public endpoint
+                tableBody.innerHTML = '';
+
+                if (locations.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="8">No locations found.</td></tr>';
+                    return;
+                }
+
+                locations.forEach(loc => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = loc.id;
+                    row.insertCell().textContent = loc.event_id;
+                    row.insertCell().textContent = loc.name;
+                    row.insertCell().textContent = loc.type;
+                    row.insertCell().textContent = loc.description || 'N/A';
+                    row.insertCell().textContent = loc.lat;
+                    row.insertCell().textContent = loc.lng;
+
+                    if (userRole === 'admin') {
+                        const actionsCell = row.insertCell();
+                        actionsCell.classList.add('admin-actions-cell');
+                        const editBtn = document.createElement('button');
+                        editBtn.textContent = 'Edit';
+                        editBtn.onclick = () => openLocationModal('edit', loc);
+                        actionsCell.appendChild(editBtn);
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.textContent = 'Delete';
+                        deleteBtn.classList.add('delete-btn');
+                        deleteBtn.onclick = () => deleteLocation(loc.id, loc.name);
+                        actionsCell.appendChild(deleteBtn);
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load locations:', error);
+                messageElem.textContent = `Failed to load locations: ${error.message}`;
+                messageElem.classList.add('error');
+                tableBody.innerHTML = '<tr><td colspan="8">Failed to load locations.</td></tr>';
+            }
+        }
+
+        function resetLocationFilters() {
+            document.getElementById('filterLocationEventId').value = '';
+            loadLocations(localStorage.getItem('user_role'));
+        }
+
+        function openLocationModal(mode, data = {}) {
+            const modal = document.getElementById('locationModal');
+            const form = document.getElementById('locationForm');
+            const titleElem = document.getElementById('locationModalTitle');
+            const messageElem = document.getElementById('locationModalMessage');
+            messageElem.textContent = '';
+
+            document.getElementById('locationId').value = data.id || '';
+            document.getElementById('locationEventId').value = data.event_id || '';
+            document.getElementById('locationName').value = data.name || '';
+            document.getElementById('locationType').value = data.type || 'poi';
+            document.getElementById('locationDescription').value = data.description || '';
+            document.getElementById('locationLat').value = data.lat || '';
+            document.getElementById('locationLng').value = data.lng || '';
+
+            titleElem.textContent = mode === 'create' ? 'Create New Location' : `Edit Location ID ${data.id}`;
+            form.onsubmit = (e) => (mode === 'create' ? handleCreateLocation(e) : handleUpdateLocation(e));
+            openModal('locationModal');
+        }
+
+        function closeLocationModal() {
+            closeModal('locationModal');
+            document.getElementById('locationForm').reset();
+            document.getElementById('locationForm').onsubmit = null;
+        }
+
+        async function handleCreateLocation(e) {
+            e.preventDefault();
+            const messageElem = document.getElementById('locationModalMessage');
+            const event_id = parseInt(document.getElementById('locationEventId').value);
+            const name = document.getElementById('locationName').value;
+            const type = document.getElementById('locationType').value;
+            const description = document.getElementById('locationDescription').value || null;
+            const lat = parseFloat(document.getElementById('locationLat').value);
+            const lng = parseFloat(document.getElementById('locationLng').value);
+
+            const payload = { event_id, name, type, lat, lng };
+            if (description) payload.description = description;
+
+            try {
+                await apiCall('/locations', 'POST', payload, true);
+                messageElem.textContent = 'Location created successfully!';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                closeLocationModal();
+                loadLocations(localStorage.getItem('user_role'));
+            } catch (error) {
+                messageElem.textContent = error.message || 'Failed to create location.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function handleUpdateLocation(e) {
+            e.preventDefault();
+            const messageElem = document.getElementById('locationModalMessage');
+            const id = document.getElementById('locationId').value;
+            const name = document.getElementById('locationName').value;
+            const type = document.getElementById('locationType').value;
+            const description = document.getElementById('locationDescription').value || null;
+            const lat = parseFloat(document.getElementById('locationLat').value);
+            const lng = parseFloat(document.getElementById('locationLng').value);
+
+            const payload = { name: name, type: type, lat: lat, lng: lng };
+            payload.description = description;
+
+            try {
+                await apiCall(`/locations/${id}`, 'PUT', payload, true);
+                messageElem.textContent = 'Location updated successfully!';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                closeLocationModal();
+                loadLocations(localStorage.getItem('user_role'));
+            } catch (error) {
+                messageElem.textContent = error.message || 'Failed to update location.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function deleteLocation(id, name) {
+            if (!confirm(`Are you sure you want to delete location "${name}" (ID: ${id})?`)) {
+                return;
+            }
+            const messageElem = document.getElementById('locationsMessage');
+            try {
+                await apiCall(`/locations/${id}`, 'DELETE', null, true);
+                messageElem.textContent = `Location ${id} deleted successfully.`;
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                loadLocations(localStorage.getItem('user_role'));
+            } catch (error) {
+                messageElem.textContent = error.message || `Failed to delete location ${id}.`;
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        // --- QUESTIONS Views and Handlers ---
+
+        function renderQuestionsPage(userRole) {
+            appContainer.innerHTML = `
+                <h2>Q&A - May I Help You?</h2>
+                <section id="askQuestionSection" style="display: none;">
+                    <h3>Ask a New Question</h3>
+                    <form id="askQuestionForm">
+                        <label for="questionText">Your Question:</label>
+                        <textarea id="questionText" required></textarea>
+                        <label for="questionEventId">Event ID (Optional):</label>
+                        <input type="number" id="questionEventId">
+                        <label for="questionCommitteeId">Committee ID (Optional):</label>
+                        <input type="number" id="questionCommitteeId">
+                        <button type="submit" class="action-button">Submit Question</button>
+                    </form>
+                    <p id="askQuestionMessage"></p>
+                </section>
+
+                <section id="myQuestionsSection" style="display: none;">
+                    <h3>My Questions</h3>
+                    <table id="myQuestionsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Question</th><th>Asked At</th><th>Event ID</th>
+                                <th>Committee ID</th><th>Answered By</th><th>Answer</th><th>Answered At</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <p id="myQuestionsMessage"></p>
+                </section>
+
+                <section id="adminQuestionManagement" style="display: none;">
+                    <h3>Admin/Faculty: Question Management</h3>
+                    <div class="flex-container">
+                        <button class="action-button" onclick="loadAdminQuestions('all')">Load All Questions</button>
+                        <button class="action-button" onclick="loadAdminQuestions('pending')">Load Pending Questions</button>
+                    </div>
+                    <table id="adminQuestionsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Volunteer</th><th>Question</th><th>Asked At</th>
+                                <th>Event ID</th><th>Committee ID</th><th>Answered By</th><th>Answer</th>
+                                <th>Answered At</th><th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <p id="adminQuestionsMessage"></p>
+                </section>
+
+                <section>
+                    <h3>General FAQ (Answered Questions)</h3>
+                    <table id="answeredQuestionsTable">
+                        <thead>
+                            <tr>
+                                <th>Question</th><th>Answer</th><th>Event ID</th>
+                                <th>Committee ID</th><th>Answered By</th><th>Answered At</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <p id="answeredQuestionsMessage"></p>
+                </section>
+            `;
+
+            document.getElementById('askQuestionForm').addEventListener('submit', handleAskQuestion);
+
+            if (userRole === 'admin' || userRole === 'faculty') {
+                document.getElementById('adminQuestionManagement').style.display = 'block';
+            }
+            if (userRole === 'volunteer' || userRole === 'admin' || userRole === 'faculty') {
+                document.getElementById('askQuestionSection').style.display = 'block';
+                document.getElementById('myQuestionsSection').style.display = 'block';
+                loadMyQuestions();
+            }
+
+            loadAnsweredQuestions(); // Public FAQ for everyone
+        }
+
+        async function handleAskQuestion(e) {
+            e.preventDefault();
+            const messageElem = document.getElementById('askQuestionMessage');
+            const question_text = document.getElementById('questionText').value;
+            const event_id_val = document.getElementById('questionEventId').value;
+            const committee_id_val = document.getElementById('questionCommitteeId').value;
+            const event_id = event_id_val ? parseInt(event_id_val) : null;
+            const committee_id = committee_id_val ? parseInt(committee_id_val) : null;
+
+            const payload = { question_text };
+            if (event_id !== null) payload.event_id = event_id;
+            if (committee_id !== null) payload.committee_id = committee_id;
+
+            try {
+                await apiCall('/questions', 'POST', payload, true);
+                messageElem.textContent = 'Question submitted successfully!';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                document.getElementById('askQuestionForm').reset();
+                loadMyQuestions();
+            } catch (error) {
+                messageElem.textContent = error.message || 'Failed to submit question.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function loadMyQuestions() {
+            const tableBody = document.getElementById('myQuestionsTable').querySelector('tbody');
+            tableBody.innerHTML = '<tr><td colspan="8">Loading your questions...</td></tr>';
+            const messageElem = document.getElementById('myQuestionsMessage');
+            messageElem.textContent = '';
+            try {
+                const questions = await apiCall('/questions/me', 'GET', null, true);
+                renderQuestionsTable(tableBody, questions, false, false);
+            } catch (error) {
+                messageElem.textContent = `Failed to load your questions: ${error.message}`;
+                messageElem.classList.add('error');
+                tableBody.innerHTML = '<tr><td colspan="8">Failed to load questions.</td></tr>';
+            }
+        }
+
+        async function loadAnsweredQuestions() {
+            const tableBody = document.getElementById('answeredQuestionsTable').querySelector('tbody');
+            tableBody.innerHTML = '<tr><td colspan="6">Loading answered questions...</td></tr>';
+            const messageElem = document.getElementById('answeredQuestionsMessage');
+            messageElem.textContent = '';
+            try {
+                const questions = await apiCall('/questions/answered', 'GET');
+                renderQuestionsTable(tableBody, questions, false, true);
+            } catch (error) {
+                messageElem.textContent = `Failed to load FAQ: ${error.message}`;
+                messageElem.classList.add('error');
+                tableBody.innerHTML = '<tr><td colspan="6">Failed to load FAQ.</td></tr>';
+            }
+        }
+
+        async function loadAdminQuestions(type) {
+            const tableBody = document.getElementById('adminQuestionsTable').querySelector('tbody');
+            tableBody.innerHTML = '<tr><td colspan="10">Loading questions...</td></tr>';
+            const messageElem = document.getElementById('adminQuestionsMessage');
+            messageElem.textContent = '';
+
+            let endpoint = '';
+            if (type === 'all') {
+                endpoint = '/questions/all';
+            } else if (type === 'pending') {
+                endpoint = '/questions/pending';
+            } else {
+                return;
+            }
+
+            try {
+                const questions = await apiCall(endpoint, 'GET', null, true);
+                renderQuestionsTable(tableBody, questions, true, false);
+            } catch (error) {
+                messageElem.textContent = `Failed to load admin questions: ${error.message}`;
+                messageElem.classList.add('error');
+                tableBody.innerHTML = '<tr><td colspan="10">Failed to load questions.</td></tr>';
+            }
+        }
+
+        function renderQuestionsTable(tableBody, questions, isAdminView, isFAQView) {
+            tableBody.innerHTML = '';
+            if (questions.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="${isAdminView ? 10 : (isFAQView ? 6 : 8)}">No questions found.</td></tr>`;
+                return;
+            }
+
+            questions.forEach(q => {
+                const row = tableBody.insertRow();
+                if (!isFAQView) {
+                    row.insertCell().textContent = q.id;
+                }
+                if (isAdminView) {
+                    row.insertCell().textContent = q.volunteer_name || `ID: ${q.volunteer_id || 'N/A'}`;
+                }
+                row.insertCell().textContent = q.question_text;
+                row.insertCell().textContent = formatDateTime(q.asked_at);
+                row.insertCell().textContent = q.event_id || 'N/A';
+                row.insertCell().textContent = q.committee_id || 'N/A';
+                row.insertCell().textContent = q.answered_by_name || `ID: ${q.answered_by || 'N/A'}`;
+                row.insertCell().textContent = q.answer_text || 'Pending';
+                row.insertCell().textContent = q.answered_at ? formatDateTime(q.answered_at) : 'N/A';
+
+                if (isAdminView) {
+                    const actionsCell = row.insertCell();
+                    if (!q.answer_text) {
+                        const answerBtn = document.createElement('button');
+                        answerBtn.textContent = 'Answer';
+                        answerBtn.onclick = () => openAnswerModal(q.id, q.question_text);
+                        actionsCell.appendChild(answerBtn);
+                    }
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Delete';
+                    deleteBtn.classList.add('delete-btn');
+                    deleteBtn.onclick = () => deleteQuestion(q.id, q.question_text);
+                    actionsCell.appendChild(deleteBtn);
+                }
+            });
+        }
+
+        function openAnswerModal(id, questionText) {
+            currentQuestionIdToAnswer = id;
+            document.getElementById('answerQuestionId').textContent = id;
+            document.getElementById('questionToAnswer').textContent = questionText;
+            document.getElementById('answerText').value = '';
+            document.getElementById('answerMessage').textContent = '';
+            document.getElementById('answerQuestionForm').addEventListener('submit', handleAnswerQuestion);
+            openModal('answerQuestionModal');
+        }
+
+        function closeAnswerModal() {
+            closeModal('answerQuestionModal');
+            document.getElementById('answerQuestionForm').reset();
+            document.getElementById('answerQuestionForm').removeEventListener('submit', handleAnswerQuestion);
+            currentQuestionIdToAnswer = null;
+        }
+
+        async function handleAnswerQuestion(e) {
+            e.preventDefault();
+            const messageElem = document.getElementById('answerMessage');
+            const answer_text = document.getElementById('answerText').value;
+
+            try {
+                const response = await apiCall(`/questions/${currentQuestionIdToAnswer}/answer`, 'PUT', { answer_text }, true);
+                messageElem.textContent = 'Question answered successfully!';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                document.getElementById('answerQuestionForm').reset();
+                closeAnswerModal();
+                loadAdminQuestions('pending');
+                loadAnsweredQuestions();
+            } catch (error) {
+                messageElem.textContent = error.message || 'Failed to answer question.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function deleteQuestion(id, questionText) {
+            if (!confirm(`Are you sure you want to delete the question "${questionText}" (ID: ${id})?`)) {
+                return;
+            }
+            const messageElem = document.getElementById('adminQuestionsMessage');
+            try {
+                await apiCall(`/questions/${id}`, 'DELETE', null, true);
+                messageElem.textContent = `Question ${id} deleted successfully.`;
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                loadAdminQuestions('all');
+                loadAnsweredQuestions();
+            } catch (error) {
+                messageElem.textContent = error.message || `Failed to delete question ${id}.`;
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        // --- ATTENDANCE Views and Handlers ---
+
+        function renderAttendancePage(userRole) {
+            appContainer.innerHTML = `
+                <h2>Attendance Management</h2>
+                <section id="volunteerAttendanceSection" style="display: none;">
+                    <h3>Volunteer Check-in/Check-out</h3>
+                    <form id="checkInForm">
+                        <h4>Check-in</h4>
+                        <label for="checkInAssignmentId">Assignment ID:</label>
+                        <input type="number" id="checkInAssignmentId" required>
+                        <label for="checkInLat">Latitude (Optional):</label>
+                        <input type="number" step="any" id="checkInLat">
+                        <label for="checkInLng">Longitude (Optional):</label>
+                        <input type="number" step="any" id="checkInLng">
+                        <label for="checkInTime">Time (Optional, YYYY-MM-DDTHH:MM):</label>
+                        <input type="datetime-local" id="checkInTime">
+                        <button type="submit" class="action-button">Check-in</button>
+                    </form>
+                    <p id="checkInMessage"></p>
+
+                    <form id="checkOutForm">
+                        <h4>Check-out</h4>
+                        <label for="checkOutAttendanceId">Attendance Record ID:</label>
+                        <input type="number" id="checkOutAttendanceId" required>
+                        <label for="checkOutTime">Time (Optional, YYYY-MM-DDTHH:MM):</label>
+                        <input type="datetime-local" id="checkOutTime">
+                        <button type="submit" class="action-button">Check-out</button>
+                    </form>
+                    <p id="checkOutMessage"></p>
+                </section>
+
+                <section id="facultyAdminAttendanceSection" style="display: none;">
+                    <h3>Faculty/Admin: Pending Attendance Approvals</h3>
+                    <h4>Filter Pending Attendance</h4>
+                    <form id="filterPendingAttendanceForm" class="flex-container">
+                        <input type="number" id="filterPendingEventId" placeholder="Event ID" required>
+                        <input type="number" id="filterPendingCommitteeId" placeholder="Committee ID (Optional)">
+                        <button type="submit" class="action-button">Filter</button>
+                        <button type="button" class="action-button" onclick="resetPendingAttendanceFilters()">Reset</button>
+                    </form>
+
+                    <table id="pendingAttendanceTable">
+                        <thead>
+                            <tr>
+                                <th>Attendance ID</th><th>Event</th><th>Committee</th><th>Volunteer Name</th>
+                                <th>Dept</th><th>Check-in Time</th><th>Lat</th><th>Lng</th><th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <p id="pendingAttendanceMessage"></p>
+                </section>
+            `;
+
+            if (userRole === 'volunteer' || userRole === 'admin') {
+                document.getElementById('volunteerAttendanceSection').style.display = 'block';
+                document.getElementById('checkInForm').addEventListener('submit', handleCheckIn);
+                document.getElementById('checkOutForm').addEventListener('submit', handleCheckOut);
+            }
+            if (userRole === 'faculty' || userRole === 'admin') {
+                document.getElementById('facultyAdminAttendanceSection').style.display = 'block';
+                document.getElementById('filterPendingAttendanceForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    loadPendingAttendance();
+                });
+            }
+        }
+
+        async function handleCheckIn(e) {
+            e.preventDefault();
+            const messageElem = document.getElementById('checkInMessage');
+            const assignment_id = parseInt(document.getElementById('checkInAssignmentId').value);
+            const lat_val = document.getElementById('checkInLat').value;
+            const lng_val = document.getElementById('checkInLng').value;
+            const time_val = document.getElementById('checkInTime').value;
+
+            const payload = { assignment_id };
+            if (lat_val) payload.lat = parseFloat(lat_val);
+            if (lng_val) payload.lng = parseFloat(lng_val);
+            if (time_val) payload.time = toISOStringFromLocal(time_val);
+
+            try {
+                await apiCall('/attendance/checkin', 'POST', payload, true);
+                messageElem.textContent = 'Checked in successfully!';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                document.getElementById('checkInForm').reset();
+                if (localStorage.getItem('user_role') === 'faculty' || localStorage.getItem('user_role') === 'admin') {
+                     loadPendingAttendance(); // Reload pending for admin/faculty
+                }
+            } catch (error) {
+                messageElem.textContent = error.message || 'Check-in failed.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function handleCheckOut(e) {
+            e.preventDefault();
+            const messageElem = document.getElementById('checkOutMessage');
+            const attendance_id = parseInt(document.getElementById('checkOutAttendanceId').value);
+            const time_val = document.getElementById('checkOutTime').value;
+
+            const payload = { attendance_id };
+            if (time_val) payload.time = toISOStringFromLocal(time_val);
+
+            try {
+                await apiCall('/attendance/checkout', 'POST', payload, true);
+                messageElem.textContent = 'Checked out successfully!';
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                document.getElementById('checkOutForm').reset();
+                if (localStorage.getItem('user_role') === 'faculty' || localStorage.getItem('user_role') === 'admin') {
+                     loadPendingAttendance();
+                }
+            } catch (error) {
+                messageElem.textContent = error.message || 'Check-out failed.';
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+        async function loadPendingAttendance() {
+            const tableBody = document.getElementById('pendingAttendanceTable').querySelector('tbody');
+            tableBody.innerHTML = '<tr><td colspan="9">Loading pending attendance...</td></tr>';
+            const messageElem = document.getElementById('pendingAttendanceMessage');
+            messageElem.textContent = '';
+
+            const event_id = document.getElementById('filterPendingEventId').value;
+            if (!event_id) {
+                messageElem.textContent = 'Event ID is required to filter pending attendance.';
+                messageElem.classList.add('error');
+                tableBody.innerHTML = '<tr><td colspan="9">Please provide an Event ID.</td></tr>';
+                return;
+            }
+            const committee_id_val = document.getElementById('filterPendingCommitteeId').value;
+            const committee_id_param = committee_id_val ? `&committee_id=${committee_id_val}` : '';
+
+            try {
+                const pending = await apiCall(`/attendance/pending?event_id=${event_id}${committee_id_param}`, 'GET', null, true);
+                tableBody.innerHTML = '';
+
+                if (pending.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="9">No pending attendance found for selected filters.</td></tr>';
+                    return;
+                }
+
+                pending.forEach(rec => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = rec.attendance_id;
+                    row.insertCell().textContent = rec.event_name || 'N/A';
+                    row.insertCell().textContent = rec.committee_name || 'N/A';
+                    row.insertCell().textContent = rec.name;
+                    row.insertCell().textContent = rec.dept || 'N/A';
+                    row.insertCell().textContent = formatDateTime(rec.check_in_time);
+                    row.insertCell().textContent = rec.lat || 'N/A';
+                    row.insertCell().textContent = rec.lng || 'N/A';
+
+                    const actionsCell = row.insertCell();
+                    const approveBtn = document.createElement('button');
+                    approveBtn.textContent = 'Approve';
+                    approveBtn.onclick = () => approveAttendance(rec.attendance_id);
+                    actionsCell.appendChild(approveBtn);
+                });
+            } catch (error) {
+                console.error('Failed to load pending attendance:', error);
+                messageElem.textContent = `Failed to load pending attendance: ${error.message}`;
+                messageElem.classList.add('error');
+                tableBody.innerHTML = '<tr><td colspan="9">Failed to load pending attendance.</td></tr>';
+            }
+        }
+
+        function resetPendingAttendanceFilters() {
+            document.getElementById('filterPendingEventId').value = '';
+            document.getElementById('filterPendingCommitteeId').value = '';
+            document.getElementById('pendingAttendanceTable').querySelector('tbody').innerHTML = '<tr><td colspan="9">Please enter an Event ID and click Filter.</td></tr>';
+            document.getElementById('pendingAttendanceMessage').textContent = '';
+        }
+
+        async function approveAttendance(id) {
+            if (!confirm(`Are you sure you want to approve attendance ID ${id}?`)) {
+                return;
+            }
+            const messageElem = document.getElementById('pendingAttendanceMessage');
+            try {
+                await apiCall('/attendance/approve', 'POST', { attendance_id: id }, true);
+                messageElem.textContent = `Attendance ID ${id} approved successfully.`;
+                messageElem.classList.remove('error');
+                messageElem.classList.add('success');
+                loadPendingAttendance(); // Reload list to show changes
+            } catch (error) {
+                messageElem.textContent = error.message || `Failed to approve attendance ${id}.`;
+                messageElem.classList.add('error');
+                messageElem.classList.remove('success');
+            }
+        }
+
+
+        // --- Initial Load & Event Listeners ---
+
+        // Handle browser back/forward buttons
+        window.onpopstate = function(event) {
+            const pageName = window.location.hash.replace('#', '') || (localStorage.getItem('access_token') ? 'dashboard' : 'login');
+            renderPage(pageName);
+        };
+
+        // Global window event listener for modals (to close when clicking outside)
+        window.onclick = function(event) {
+            const modals = document.getElementsByClassName('modal');
+            for (let i = 0; i < modals.length; i++) {
+                if (event.target == modals[i]) {
+                    closeModal(modals[i].id); // Use the generic closeModal
+                }
+            }
+        }
+
+        // Initial page render based on authentication status or hash
+        const initialPage = window.location.hash.replace('#', '') || (localStorage.getItem('access_token') ? 'dashboard' : 'login');
+        renderPage(initialPage);
+    </script>
+</body>
+</html>

@@ -1,0 +1,900 @@
+Seva App Backend API Documentation
+Base URL: http://localhost:8000 (or your configured API_ADDR)
+1. Health Check (/healthz)
+GET /healthz
+Description: Returns the health status of the API.
+Authentication: None (Public)
+Success Response (200 OK - application/json):
+code
+JSON
+{
+  "status": "ok",
+  "message": "API is running"
+}
+Error Responses: (Rare, indicates severe server issue)
+2. Authentication (/auth)
+POST /auth/login
+Description: Authenticates a user (Faculty, Admin, or Volunteer) with email and password, and issues JWT tokens.
+Authentication: None (Public)
+Request Body (application/json):
+code
+JSON
+{
+  "email": "user@example.com",
+  "password": "yourpassword"
+}
+Success Response (200 OK - application/json):
+code
+JSON
+{
+  "access_token": "eyJhbGciOiJIUzI1Ni...",
+  "expires_in": 900, // Access token TTL in seconds (e.g., 15 minutes)
+  "refresh_token": "optional_if_admin_faculty", // Only for Faculty/Admin
+  "role": "admin" | "faculty" | "volunteer",
+  "user_id": 1
+}
+Error Responses:
+400 Bad Request: "Bad JSON", "Email and password required"
+401 Unauthorized: "Invalid credentials", "Invalid credentials or password not set for this account."
+500 Internal Server Error: Database or server errors
+POST /auth/register/volunteer
+Description: Allows a new student to register as a volunteer.
+Authentication: None (Public)
+Request Body (application/json):
+code
+JSON
+{
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "password": "securepassword123",
+  "phone": "+1234567890", // Optional
+  "dept": "Computer Science", // Optional
+  "college_id": "C12345" // Optional, but usually unique
+}
+Success Response (201 Created - application/json):
+code
+JSON
+{
+  "message": "Volunteer registered successfully",
+  "id": 123
+}
+Error Responses:
+400 Bad Request: "Bad JSON", "Name, valid email, and password (min 8 chars) are required"
+409 Conflict: "Email already registered", "College ID already registered"
+500 Internal Server Error: Database errors
+POST /auth/refresh
+Description: Exchanges a valid refresh token for a new access token (and rotates the refresh token for Faculty/Admin).
+Authentication: None (Requires RefreshToken in body)
+Request Body (application/json):
+code
+JSON
+{
+  "refresh_token": "your_refresh_token_string"
+}
+Success Response (200 OK - application/json):
+code
+JSON
+{
+  "access_token": "eyJhbGciOiJIUzI1Ni...",
+  "expires_in": 900,
+  "refresh_token": "new_refresh_token_string", // New refresh token
+  "role": "admin" | "faculty",
+  "user_id": 1
+}
+Error Responses:
+400 Bad Request: "Bad JSON", "Refresh token required"
+401 Unauthorized: "Invalid refresh token", "Expired or revoked refresh token"
+500 Internal Server Error: Database errors
+GET /auth/me
+Description: Returns the ID and role of the currently authenticated user.
+Authentication: JWT Required
+Success Response (200 OK - application/json):
+code
+JSON
+{
+  "user_id": 1,
+  "role": "admin" | "faculty" | "volunteer"
+}
+Error Responses:
+401 Unauthorized: "Authentication required", "Invalid token"
+500 Internal Server Error: Internal errors
+POST /auth/logout
+Description: Invalidates the provided refresh token (if applicable for Faculty/Admin).
+Authentication: JWT Required (but acts on refresh token from body)
+Request Body (application/json - Optional):
+code
+JSON
+{
+  "refresh_token": "your_refresh_token_string" // Optional: to revoke a specific refresh token
+}
+Success Response (204 No Content)
+Error Responses: (Rare, usually successful logout)
+POST /auth/register/faculty
+Description: Allows an Admin to create new Faculty or Admin accounts.
+Authentication: JWT Required (Role: admin)
+Request Body (application/json):
+code
+JSON
+{
+  "name": "Jane Faculty",
+  "email": "jane.faculty@example.com",
+  "password": "facultysecurepassword123",
+  "role": "faculty" // or "admin"
+}
+Success Response (201 Created - application/json):
+code
+JSON
+{
+  "message": "Faculty account created successfully"
+}
+Error Responses:
+400 Bad Request: "Bad JSON", "Name, email, and password (>=8 chars) required", "Invalid role specified for faculty registration"
+401 Unauthorized: "Authentication required", "Invalid token"
+403 Forbidden: "Insufficient role privileges"
+409 Conflict: "Email already registered as a volunteer", "Email already registered for a faculty account"
+500 Internal Server Error: Database errors
+3. Announcements (/announcements)
+GET /announcements
+Description: Retrieves a list of all announcements, with optional filters.
+Authentication: JWT Required (Role: faculty, admin)
+Query Parameters:
+event_id: int64 (Optional) - Filter by event.
+committee_id: int64 (Optional) - Filter by committee.
+active_only: boolean (Optional, default false) - If true, only return announcements with expires_at in the future or NULL.
+limit: int (Optional, default 100, max 500)
+offset: int (Optional, default 0)
+Success Response (200 OK - application/json):
+code
+JSON
+[
+  {
+    "id": 1,
+    "event_id": 101,
+    "committee_id": 201, // Nullable
+    "title": "Important Update",
+    "body": "Details about the important update.",
+    "priority": "high", // "low", "normal", "high", "urgent"
+    "created_by": 501, // ID of the creator
+    "created_at": "2025-09-19T10:00:00Z",
+    "expires_at": "2025-09-20T10:00:00Z", // Nullable
+    "created_by_name": "Dr. Smith", // Enriched field
+    "committee_name": "Logistics Committee" // Enriched field
+  }
+]
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
+GET /announcements/:id
+Description: Retrieves a single announcement by its ID.
+Authentication: JWT Required (Role: faculty, admin)
+Path Parameters:
+id: int64 (Required) - The ID of the announcement.
+Success Response (200 OK - application/json):
+code
+JSON
+{
+  "id": 1,
+  "event_id": 101,
+  "committee_id": 201,
+  "title": "Important Update",
+  "body": "Details about the important update.",
+  "priority": "high",
+  "created_by": 501,
+  "created_at": "2025-09-19T10:00:00Z",
+  "expires_at": "2025-09-20T10:00:00Z",
+  "created_by_name": "Dr. Smith",
+  "committee_name": "Logistics Committee"
+}
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
+GET /announcements/me
+Description: Retrieves announcements relevant to the logged-in volunteer (event-wide for their assignments AND committee-specific for their assigned committees).
+Authentication: JWT Required (Role: volunteer, admin)
+Query Parameters:
+active_only: boolean (Optional, default true) - Only return active announcements.
+limit: int (Optional, default 100, max 500)
+offset: int (Optional, default 0)
+Success Response (200 OK - application/json):
+code
+JSON
+[
+  {
+    "id": 2,
+    "event_id": 101,
+    "committee_id": null,
+    "title": "Event Schedule Change",
+    "body": "Please check the updated schedule for tomorrow.",
+    "priority": "urgent",
+    "created_by": 501,
+    "created_at": "2025-09-19T09:30:00Z",
+    "expires_at": "2025-09-19T23:59:59Z",
+    "created_by_name": "Dr. Smith",
+    "committee_name": null
+  }
+]
+Error Responses: 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
+POST /announcements
+Description: Creates a new announcement.
+Authentication: JWT Required (Role: admin)
+Request Body (application/json):
+code
+JSON
+{
+  "event_id": 101,
+  "committee_id": 201, // Optional, set null for event-wide
+  "title": "New Volunteer Briefing",
+  "body": "Mandatory briefing for all new volunteers at 2 PM in Auditorium.",
+  "priority": "high", // "low", "normal", "high", "urgent" (defaults to "normal")
+  "expires_at": "2025-09-25T17:00:00Z" // Optional, null for no expiry
+}
+Success Response (201 Created - application/json):
+code
+JSON
+{
+  "id": 4,
+  "event_id": 101,
+  "committee_id": 201,
+  "title": "New Volunteer Briefing",
+  "body": "Mandatory briefing for all new volunteers at 2 PM in Auditorium.",
+  "priority": "high",
+  "created_by": 501, // ID of the admin who created it
+  "created_at": "2025-09-19T11:00:00Z",
+  "expires_at": "2025-09-25T17:00:00Z"
+}
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
+PUT /announcements/:id
+Description: Updates an existing announcement.
+Authentication: JWT Required (Role: admin)
+Path Parameters:
+id: int64 (Required) - The ID of the announcement to update.
+Request Body (application/json): (Any or all fields optional)
+code
+JSON
+{
+  "committee_id": null, // Set null to make it event-wide
+  "title": "Updated Briefing Details",
+  "body": "Location changed to Conference Room 3.",
+  "priority": "urgent",
+  "expires_at": "2025-09-26T09:00:00Z"
+}
+Success Response (204 No Content)
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
+DELETE /announcements/:id
+Description: Deletes an announcement by its ID.
+Authentication: JWT Required (Role: admin)
+Path Parameters:
+id: int64 (Required) - The ID of the announcement to delete.
+Success Response (204 No Content)
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
+4. Attendance (/attendance)
+POST /attendance/checkin
+Description: Allows a volunteer to check-in for a specific assignment.
+Authentication: JWT Required (Role: volunteer, admin)
+Request Body (application/json):
+code
+JSON
+{
+  "assignment_id": 123,
+  "lat": 34.0522,   // Optional
+  "lng": -118.2437, // Optional
+  "time": "2025-09-19T08:00:00Z" // Optional, RFC3339, defaults to now
+}
+Success Response (201 Created - application/json):
+code
+JSON
+{
+  "status": "checked_in"
+}
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 409 Conflict, 500 Internal Server Error
+POST /attendance/checkout
+Description: Allows a volunteer to check-out from a previous check-in.
+Authentication: JWT Required (Role: volunteer, admin)
+Request Body (application/json):
+code
+JSON
+{
+  "attendance_id": 456,
+  "time": "2025-09-19T17:00:00Z" // Optional, RFC3339, defaults to now
+}
+Success Response (204 No Content)
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 500 Internal Server Error
+GET /attendance/pending
+Description: Retrieves a list of attendance records awaiting approval.
+Authentication: JWT Required (Role: faculty, admin)
+Query Parameters:
+event_id: int64 (Required) - Filter by event.
+committee_id: int64 (Optional) - Filter by committee.
+limit: int (Optional, default 100, max 500)
+offset: int (Optional, default 0)
+Success Response (200 OK - application/json):
+code
+JSON
+[
+  {
+    "attendance_id": 1,
+    "committee_id": 201,
+    "name": "Alice Volunteer", // Volunteer Name
+    "dept": "ECE", // Volunteer Department (Nullable)
+    "check_in_time": "2025-09-19T08:05:00Z",
+    "lat": 34.05, // Nullable
+    "lng": -118.24, // Nullable
+    "committee_name": "Event Setup",
+    "event_name": "Annual Fest"
+  }
+]
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
+POST /attendance/approve
+Description: Approves a specific attendance record.
+Authentication: JWT Required (Role: faculty, admin)
+Request Body (application/json):
+code
+JSON
+{
+  "attendance_id": 456
+}
+Success Response (200 OK - application/json):
+code
+JSON
+{
+  "status": "approved",
+  "approved_at": "2025-09-19T10:30:00Z"
+}
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 500 Internal Server Error
+5. Committees (/committees)
+GET /committees
+Description: Retrieves a list of committees, with optional filters.
+Authentication: None (Public)
+Query Parameters:
+event_id: int64 (Optional) - Filter by event.
+limit: int (Optional, default 100, max 500)
+offset: int (Optional, default 0)
+Success Response (200 OK - application/json):
+code
+JSON
+[
+  {
+    "id": 1,
+    "event_id": 101,
+    "name": "Logistics Committee",
+    "description": "Handles all event logistics.",
+    "created_at": "2025-01-15T09:00:00Z",
+    "event_name": "Annual Fest"
+  }
+]
+Error Responses: 400 Bad Request, 500 Internal Server Error
+GET /committees/:id
+Description: Retrieves a single committee by its ID.
+Authentication: None (Public)
+Path Parameters:
+id: int64 (Required) - The ID of the committee.
+Success Response (200 OK - application/json):
+code
+JSON
+{
+  "id": 1,
+  "event_id": 101,
+  "name": "Logistics Committee",
+  "description": "Handles all event logistics.",
+  "created_at": "2025-01-15T09:00:00Z",
+  "event_name": "Annual Fest"
+}
+Error Responses: 400 Bad Request, 404 Not Found, 500 Internal Server Error
+POST /committees
+Description: Creates a new committee for an event.
+Authentication: JWT Required (Role: admin)
+Request Body (application/json):
+code
+JSON
+{
+  "event_id": 101,
+  "name": "Food & Beverage",
+  "description": "Manages food and drink for participants." // Optional
+}
+Success Response (201 Created - application/json):
+code
+JSON
+{
+  "id": 2,
+  "event_id": 101,
+  "name": "Food & Beverage",
+  "description": "Manages food and drink for participants.",
+  "created_at": "2025-09-19T12:00:00Z"
+}
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 409 Conflict, 500 Internal Server Error
+PUT /committees/:id
+Description: Updates an existing committee.
+Authentication: JWT Required (Role: admin)
+Path Parameters:
+id: int64 (Required) - The ID of the committee to update.
+Request Body (application/json): (Any or all fields optional)
+code
+JSON
+{
+  "name": "F&B Operations",
+  "description": "Oversees all food and beverage operations and volunteers."
+}
+Success Response (204 No Content)
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 500 Internal Server Error
+DELETE /committees/:id
+Description: Deletes a committee by its ID.
+Authentication: JWT Required (Role: admin)
+Path Parameters:
+id: int64 (Required) - The ID of the committee to delete.
+Success Response (204 No Content)
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
+6. Locations (/locations)
+POST /locations
+Description: Creates a new event location.
+Authentication: JWT Required (Role: admin)
+Request Body (application/json):
+code
+JSON
+{
+  "event_id": 101,
+  "name": "Main Stage",
+  "type": "stage", // "stage", "dining", "helpdesk", "parking", "water", "toilet", "poi"
+  "description": "Central performance area.", // Optional
+  "lat": 34.0522,
+  "lng": -118.2437
+}
+Success Response (201 Created - application/json):
+code
+JSON
+{
+  "id": 1,
+  "event_id": 101,
+  "name": "Main Stage",
+  "type": "stage",
+  "description": "Central performance area.",
+  "lat": 34.0522,
+  "lng": -118.2437
+}
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 409 Conflict, 500 Internal Server Error
+GET /locations
+Description: Retrieves a list of all event locations, with optional filtering by event.
+Authentication: None (Public)
+Query Parameters:
+event_id: int64 (Optional) - Filter locations by event.
+Success Response (200 OK - application/json):
+code
+JSON
+[
+  {
+    "id": 1,
+    "event_id": 101,
+    "name": "Main Stage",
+    "type": "stage",
+    "description": "Central performance area.",
+    "lat": 34.0522,
+    "lng": -118.2437
+  }
+]
+Error Responses: 400 Bad Request, 500 Internal Server Error
+GET /locations/:id
+Description: Retrieves a single location by its ID.
+Authentication: None (Public)
+Path Parameters:
+id: int64 (Required) - The ID of the location.
+Success Response (200 OK - application/json):
+code
+JSON
+{
+  "id": 1,
+  "event_id": 101,
+  "name": "Main Stage",
+  "type": "stage",
+  "description": "Central performance area.",
+  "lat": 34.0522,
+  "lng": -118.2437
+}
+Error Responses: 400 Bad Request, 404 Not Found, 500 Internal Server Error
+PUT /locations/:id
+Description: Updates an existing location.
+Authentication: JWT Required (Role: admin)
+Path Parameters:
+id: int64 (Required) - The ID of the location to update.
+Request Body (application/json): (Any or all fields optional)
+code
+JSON
+{
+  "name": "Main Stage A",
+  "description": "The primary performance area for headliners."
+}
+Success Response (200 OK - application/json):
+code
+JSON
+{
+  "message": "Location updated successfully",
+  "id": 1
+}
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 500 Internal Server Error
+DELETE /locations/:id
+Description: Deletes a location by its ID.
+Authentication: JWT Required (Role: admin)
+Path Parameters:
+id: int64 (Required) - The ID of the location to delete.
+Success Response (200 OK - application/json):
+code
+JSON
+{
+  "message": "Location deleted successfully",
+  "id": 1
+}
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
+7. Questions (/questions)
+POST /questions
+Description: Allows a logged-in volunteer to ask a new question.
+Authentication: JWT Required (Role: volunteer, admin)
+Request Body (application/json):
+code
+JSON
+{
+  "question_text": "Where do I report for my shift tomorrow?",
+  "event_id": 101, // Optional context
+  "committee_id": 201 // Optional context
+}
+Success Response (201 Created - application/json):
+code
+JSON
+{
+  "id": 1,
+  "volunteer_id": 123,
+  "volunteer_name": null, // Not returned directly by creation
+  "question_text": "Where do I report for my shift tomorrow?",
+  "asked_at": "2025-09-19T13:00:00Z",
+  "event_id": 101,
+  "committee_id": 201,
+  "answered_by": null,
+  "answered_by_name": null,
+  "answer_text": null,
+  "answered_at": null
+}
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
+GET /questions/me
+Description: Retrieves all questions asked by the logged-in volunteer.
+Authentication: JWT Required (Role: volunteer, admin)
+Query Parameters:
+limit: int (Optional, default 100, max 500)
+offset: int (Optional, default 0)
+Success Response (200 OK - application/json):
+code
+JSON
+[
+  {
+    "id": 1,
+    "volunteer_id": 123,
+    "volunteer_name": "Bob Volunteer",
+    "question_text": "Where do I report for my shift tomorrow?",
+    "asked_at": "2025-09-19T13:00:00Z",
+    "event_id": 101,
+    "committee_id": 201,
+    "answered_by": 501,
+    "answered_by_name": "Dr. Smith",
+    "answer_text": "Report to the main helpdesk by 8 AM.",
+    "answered_at": "2025-09-19T13:30:00Z"
+  }
+]
+Error Responses: 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
+GET /questions/answered
+Description: Retrieves all questions that have been answered, suitable for a public FAQ.
+Authentication: None (Public)
+Query Parameters:
+limit: int (Optional, default 100, max 500)
+offset: int (Optional, default 0)
+Success Response (200 OK - application/json):
+code
+JSON
+[
+  {
+    "id": 1,
+    "volunteer_id": 123, // Nullable
+    "volunteer_name": "Bob Volunteer", // Nullable
+    "question_text": "Where do I report for my shift tomorrow?",
+    "asked_at": "2025-09-19T13:00:00Z",
+    "event_id": 101,
+    "committee_id": 201,
+    "answered_by": 501,
+    "answered_by_name": "Dr. Smith",
+    "answer_text": "Report to the main helpdesk by 8 AM.",
+    "answered_at": "2025-09-19T13:30:00Z"
+  }
+]
+Error Responses: 500 Internal Server Error
+GET /questions/all
+Description: Retrieves all questions, including unanswered ones.
+Authentication: JWT Required (Role: admin)
+Query Parameters: limit, offset (same as above)
+Success Response (200 OK - application/json): (Same structure as ListMyQuestions but for all users)
+Error Responses: 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
+GET /questions/pending
+Description: Retrieves all questions that have not yet been answered.
+Authentication: JWT Required (Role: admin)
+Query Parameters: limit, offset (same as above)
+Success Response (200 OK - application/json): (Same structure as ListMyQuestions but filtered for answer_text IS NULL)
+Error Responses: 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
+PUT /questions/:id/answer
+Description: Provides an answer to an existing question.
+Authentication: JWT Required (Role: admin)
+Path Parameters:
+id: int64 (Required) - The ID of the question to answer.
+Request Body (application/json):
+code
+JSON
+{
+  "answer_text": "Report to the main helpdesk by 8 AM."
+}
+Success Response (204 No Content - application/json with message):
+code
+JSON
+{
+  "message": "Question answered successfully",
+  "answered_at": "2025-09-19T13:30:00Z"
+}
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 500 Internal Server Error
+DELETE /questions/:id
+Description: Deletes a question by its ID.
+Authentication: JWT Required (Role: admin)
+Path Parameters:
+id: int64 (Required) - The ID of the question to delete.
+Success Response (204 No Content)
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
+8. Volunteers (/volunteers)
+POST /volunteers
+Description: Creates a new volunteer record (Admin managed).
+Authentication: JWT Required (Role: admin)
+Request Body (application/json):
+code
+JSON
+{
+  "name": "Jane Doe",
+  "email": "jane.doe@example.com", // Optional, can be null
+  "phone": "+1987654321", // Optional
+  "dept": "Arts", // Optional
+  "college_id": "A9876", // Optional, but usually unique
+  "password": "initialpassword123" // Optional, admin can set an initial password
+}
+Success Response (201 Created - application/json):
+code
+JSON
+{
+  "id": 456,
+  "name": "Jane Doe",
+  "email": "jane.doe@example.com",
+  "phone": "+1987654321",
+  "dept": "Arts",
+  "college_id": "A9876"
+}
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 409 Conflict, 500 Internal Server Error
+GET /volunteers
+Description: Retrieves a list of all volunteer records.
+Authentication: JWT Required (Role: admin)
+Query Parameters:
+limit: int (Optional, default 100, max 500)
+offset: int (Optional, default 0)
+Success Response (200 OK - application/json):
+code
+JSON
+[
+  {
+    "id": 1,
+    "name": "Alice Volunteer",
+    "email": "alice@example.com", // Nullable
+    "phone": "+1123456789", // Nullable
+    "dept": "CSE", // Nullable
+    "college_id": "V123", // Nullable
+    "role": "volunteer",
+    "created_at": "2025-01-01T10:00:00Z"
+  }
+]
+Error Responses: 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
+GET /volunteers/:id
+Description: Retrieves a single volunteer record by ID.
+Authentication: JWT Required (Role: admin)
+Path Parameters:
+id: int64 (Required) - The ID of the volunteer.
+Success Response (200 OK - application/json): (Same structure as individual item in GET /volunteers)
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
+PUT /volunteers/:id
+Description: Updates an existing volunteer record.
+Authentication: JWT Required (Role: admin)
+Path Parameters:
+id: int64 (Required) - The ID of the volunteer to update.
+Request Body (application/json): (Any or all fields optional)
+code
+JSON
+{
+  "name": "Alice B. Volunteer",
+  "phone": "+1111222333",
+  "password": "newsecurepassword", // Admin can set/reset password
+  "email": "alice.updated@example.com" // Can update email
+}
+Success Response (204 No Content)
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 500 Internal Server Error
+DELETE /volunteers/:id
+Description: Deletes a volunteer record by ID.
+Authentication: JWT Required (Role: admin)
+Path Parameters:
+id: int64 (Required) - The ID of the volunteer to delete.
+Success Response (204 No Content)
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
+POST /volunteers/bulk
+Description: Uploads a CSV file to create/update volunteers and their assignments for a specific event and committee.
+Authentication: JWT Required (Role: admin)
+Query Parameters:
+event_id: int64 (Required) - The ID of the event for assignments.
+committee_id: int64 (Required) - The ID of the committee for assignments.
+Request Body (multipart/form-data):
+file: A CSV file with the following header (case-insensitive, order doesn't strictly matter but column names must match):
+name,email,phone,dept,college_id,reporting_time_iso,shift,start_time_iso,end_time_iso,role,status,notes
+name: (Required) Volunteer's full name.
+email: (Optional) Volunteer's email. If existing email, volunteer is found, otherwise created. If email exists for faculty, error.
+phone: (Optional)
+dept: (Optional) Department.
+college_id: (Optional) College ID.
+reporting_time_iso: (Optional) RFC3339 format (e.g., 2025-09-19T08:00:00Z).
+shift: (Optional) e.g., "Morning", "Evening".
+start_time_iso: (Optional) RFC3339 format.
+end_time_iso: (Optional) RFC3339 format.
+role: (Optional, default volunteer) volunteer, lead, support.
+status: (Optional, default assigned) assigned, standby, cancelled.
+notes: (Optional) Any additional notes for the assignment.
+Success Response (200 OK - application/json):
+code
+JSON
+{
+  "created_volunteers": 5,
+  "created_assignments": 10, // Includes both newly created and updated assignments
+  "updated_assignments": 0,  // Note: current Go logic increments 'created_assignments' for updates too, so this will be 0.
+  "errors": [
+    {
+      "line": 3,
+      "error": "missing name"
+    }
+  ]
+}
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
+GET /volunteers/export_csv
+Description: Exports all volunteer data to a CSV file.
+Authentication: JWT Required (Role: admin)
+Success Response (200 OK - text/csv):
+A CSV file named volunteers_export.csv with columns: ID,Name,Email,Phone,Department,College ID,Created At.
+Error Responses: 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
+GET /volunteers/assignments/export_csv
+Description: Exports all volunteer assignment data to a CSV file.
+Authentication: JWT Required (Role: admin)
+Success Response (200 OK - text/csv):
+A CSV file named volunteer_assignments_export.csv with columns: Assignment ID,Event ID,Event Name,Committee ID,Committee Name,Volunteer ID,Volunteer Name,Volunteer Email,Role,Status,Reporting Time (ISO),Shift,Start Time (ISO),End Time (ISO),Notes,Created At (ISO).
+Error Responses: 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
+POST /volunteers/assignments
+Description: Creates or updates a specific assignment for an existing volunteer.
+Authentication: JWT Required (Role: admin)
+Request Body (application/json):
+code
+JSON
+{
+  "event_id": 101,
+  "committee_id": 201,
+  "volunteer_id": 123,
+  "role": "volunteer", // "volunteer", "lead", "support" (defaults to "volunteer")
+  "status": "assigned", // "assigned", "standby", "cancelled" (defaults to "assigned")
+  "reporting_time": "2025-09-20T08:30:00Z", // Optional, RFC3339
+  "shift": "Morning Shift A", // Optional
+  "start_time": "2025-09-20T09:00:00Z", // Optional, RFC3339
+  "end_time": "2025-09-20T13:00:00Z", // Optional, RFC3339
+  "notes": "Handles registration desk." // Optional
+}
+Success Response (201 Created - application/json):
+code
+JSON
+{
+  "id": 789,
+  "event_id": 101,
+  "committee_id": 201,
+  "volunteer_id": 123,
+  "role": "volunteer",
+  "status": "assigned",
+  "reporting_time": "2025-09-20T08:30:00Z",
+  "shift": "Morning Shift A",
+  "start_time": "2025-09-20T09:00:00Z",
+  "end_time": "2025-09-20T13:00:00Z",
+  "notes": "Handles registration desk.",
+  "created_at": "2025-09-19T14:00:00Z",
+  "volunteer_name": null, // Not returned by Create, needs separate GET for full enrichment
+  "volunteer_email": null,
+  "committee_name": null,
+  "event_name": null
+}
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
+GET /volunteers/assignments
+Description: Lists all volunteer assignments, with optional filters.
+Authentication: JWT Required (Role: admin)
+Query Parameters:
+event_id: int64 (Optional)
+committee_id: int64 (Optional)
+volunteer_id: int64 (Optional)
+limit: int (Optional, default 100, max 500)
+offset: int (Optional, default 0)
+Success Response (200 OK - application/json): (Array of VolunteerAssignment objects, enriched with names)
+code
+JSON
+[
+  {
+    "id": 789,
+    "event_id": 101,
+    "committee_id": 201,
+    "volunteer_id": 123,
+    "role": "volunteer",
+    "status": "assigned",
+    "reporting_time": "2025-09-20T08:30:00Z",
+    "shift": "Morning Shift A",
+    "start_time": "2025-09-20T09:00:00Z",
+    "end_time": "2025-09-20T13:00:00Z",
+    "notes": "Handles registration desk.",
+    "created_at": "2025-09-19T14:00:00Z",
+    "volunteer_name": "Bob Volunteer",
+    "volunteer_email": "bob@example.com",
+    "committee_name": "Event Setup",
+    "event_name": "Annual Fest"
+  }
+]
+Error Responses: 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
+GET /volunteers/assignments/:id
+Description: Retrieves a single volunteer assignment by ID.
+Authentication: JWT Required (Role: admin)
+Path Parameters:
+id: int64 (Required) - The ID of the assignment.
+Success Response (200 OK - application/json): (Same structure as individual item in GET /volunteers/assignments)
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
+PUT /volunteers/assignments/:id
+Description: Updates an existing volunteer assignment.
+Authentication: JWT Required (Role: admin)
+Path Parameters:
+id: int64 (Required) - The ID of the assignment to update.
+Request Body (application/json): (Any or all fields optional)
+code
+JSON
+{
+  "role": "lead",
+  "status": "standby",
+  "notes": "Oversees registration team during peak hours."
+}
+Success Response (204 No Content)
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
+DELETE /volunteers/assignments/:id
+Description: Deletes a volunteer assignment by ID.
+Authentication: JWT Required (Role: admin)
+Path Parameters:
+id: int64 (Required) - The ID of the assignment to delete.
+Success Response (204 No Content)
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
+GET /volunteers/me
+Description: Retrieves the profile details of the logged-in volunteer.
+Authentication: JWT Required (Role: volunteer, admin)
+Success Response (200 OK - application/json): (Same structure as individual item in GET /volunteers)
+Error Responses: 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
+POST /volunteers/me/set-password
+Description: Allows a logged-in volunteer to set or change their password.
+Authentication: JWT Required (Role: volunteer, admin)
+Request Body (application/json):
+code
+JSON
+{
+  "old_password": "currentpassword", // Required if password already set
+  "new_password": "newsecurepassword123"
+}
+Success Response (200 OK - application/json):
+code
+JSON
+{
+  "message": "Password updated successfully"
+}
+Error Responses: 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error
+GET /volunteers/me/assignments
+Description: Lists all assignments for the logged-in volunteer.
+Authentication: JWT Required (Role: volunteer, admin)
+Query Parameters: limit, offset (same as above)
+Success Response (200 OK - application/json): (Array of VolunteerAssignment objects, enriched with names)
+Error Responses: 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
+GET /volunteers/me/committees
+Description: Lists all committees the logged-in volunteer is assigned to.
+Authentication: JWT Required (Role: volunteer, admin)
+Query Parameters: limit, offset (same as above)
+Success Response (200 OK - application/json): (Array of Committee objects, enriched with event name)
+Error Responses: 401 Unauthorized, 403 Forbidden, 500 Internal Server Error
