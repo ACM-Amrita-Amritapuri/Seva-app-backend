@@ -672,6 +672,218 @@ func ListAllAttendance(pool *pgxpool.Pool) fiber.Handler {
 
 // ExportAttendanceCSV - GET /attendance/export_csv?event_id=&committee_id=&volunteer_id=&shift=&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
 // Exports attendance records to a CSV file.
+// func ExportAttendanceCSV(pool *pgxpool.Pool) fiber.Handler {
+// 	return func(c *fiber.Ctx) error {
+// 		filters := buildAttendanceFilters(c) // Re-use filter building logic
+
+// 		args := []any{}
+// 		whereConditions := []string{}
+// 		paramCounter := 1
+
+// 		if filters.EventID.Valid {
+// 			whereConditions = append(whereConditions, "va.event_id=$"+strconv.Itoa(paramCounter))
+// 			args = append(args, filters.EventID.Int64)
+// 			paramCounter++
+// 		}
+// 		if filters.CommitteeID.Valid {
+// 			whereConditions = append(whereConditions, "va.committee_id=$"+strconv.Itoa(paramCounter))
+// 			args = append(args, filters.CommitteeID.Int64)
+// 			paramCounter++
+// 		}
+// 		if filters.VolunteerID.Valid {
+// 			whereConditions = append(whereConditions, "va.volunteer_id=$"+strconv.Itoa(paramCounter))
+// 			args = append(args, filters.VolunteerID.Int64)
+// 			paramCounter++
+// 		}
+// 		if filters.Shift.Valid {
+// 			whereConditions = append(whereConditions, "va.shift ILIKE $"+strconv.Itoa(paramCounter))
+// 			args = append(args, "%"+filters.Shift.String+"%")
+// 			paramCounter++
+// 		}
+// 		if filters.StartDate.Valid {
+// 			whereConditions = append(whereConditions, "DATE(a.check_in_time) >= $"+strconv.Itoa(paramCounter))
+// 			args = append(args, filters.StartDate.Time)
+// 			paramCounter++
+// 		}
+// 		if filters.EndDate.Valid {
+// 			whereConditions = append(whereConditions, "DATE(a.check_in_time) <= $"+strconv.Itoa(paramCounter))
+// 			args = append(args, filters.EndDate.Time)
+// 			paramCounter++
+// 		}
+
+// 		whereClause := ""
+// 		if len(whereConditions) > 0 {
+// 			whereClause = "WHERE " + strings.Join(whereConditions, " AND ")
+// 		}
+
+// 		query := `
+// 		  SELECT a.id, a.assignment_id, a.check_in_time, a.check_out_time, a.lat, a.lng,
+// 		         v.id AS volunteer_id, v.name AS volunteer_name,
+// 		         c.id AS committee_id, c.name AS committee_name,
+// 		         e.id AS event_id, e.name AS event_name,
+// 				 va.shift AS assignment_shift
+// 		  FROM attendance a
+// 		  JOIN volunteer_assignments va ON va.id = a.assignment_id
+// 		  JOIN volunteers v ON v.id = va.volunteer_id
+// 		  JOIN committees c ON c.id = va.committee_id
+// 		  JOIN events e ON e.id = va.event_id
+// 		  ` + whereClause + `
+// 		  ORDER BY a.check_in_time DESC
+// 		` // No LIMIT/OFFSET for CSV export
+
+// 		rows, err := pool.Query(c.Context(), query, args...)
+// 		if err != nil {
+// 			log.Printf("Error querying attendance for CSV export: %v", err)
+// 			return fiber.NewError(fiber.StatusInternalServerError, "Failed to retrieve attendance data for export")
+// 		}
+// 		defer rows.Close()
+
+// 		c.Set("Content-Type", "text/csv")
+// 		c.Set("Content-Disposition", `attachment; filename="attendance_export.csv"`)
+
+// 		writer := csv.NewWriter(c.Response().BodyWriter())
+// 		defer writer.Flush()
+
+// 		// Write CSV header
+// 		header := []string{
+// 			"Attendance ID", "Assignment ID", "Event ID", "Event Name", "Committee ID", "Committee Name",
+// 			"Volunteer ID", "Volunteer Name", "Shift", "Check-in Time (ISO)", "Check-out Time (ISO)", "Latitude", "Longitude",
+// 		}
+// 		if err := writer.Write(header); err != nil {
+// 			log.Printf("Error writing CSV header: %v", err)
+// 			return fiber.NewError(fiber.StatusInternalServerError, "Failed to write CSV header")
+// 		}
+
+// 		// Write data rows
+// 		for rows.Next() {
+// 			var att models.Attendance
+// 			var checkOutTime sql.NullTime
+// 			var lat, lng sql.NullFloat64
+// 			var volunteerName string
+// 			var committeeName string
+// 			var eventName string
+// 			var assignmentShift sql.NullString
+
+// 			err := rows.Scan(&att.ID, &att.AssignmentID, &att.CheckInTime, &checkOutTime, &lat, &lng,
+// 				&att.VolunteerID, &volunteerName,
+// 				&att.CommitteeID, &committeeName,
+// 				&att.EventID, &eventName,
+// 				&assignmentShift)
+// 			if err != nil {
+// 				log.Printf("Error scanning attendance row for export: %v", err)
+// 				continue // Skip this row, but continue with others
+// 			}
+
+// 			// Populate nullable fields from sql.NullXXX types
+// 			if checkOutTime.Valid {
+// 				att.CheckOutTime = &checkOutTime.Time
+// 			}
+// 			if lat.Valid {
+// 				att.Lat = &lat.Float64
+// 			}
+// 			if lng.Valid {
+// 				att.Lng = &lng.Float64
+// 			}
+// 			// The `Shift` field in `models.Attendance` is `*string`, so assign directly
+// 			if assignmentShift.Valid {
+// 				att.Shift = &assignmentShift.String
+// 			}
+
+// 			checkOutTimeStr := ""
+// 			if checkOutTime.Valid {
+// 				checkOutTimeStr = checkOutTime.Time.Format(time.RFC3339)
+// 			}
+
+// 			record := []string{
+// 				strconv.FormatInt(att.ID, 10),
+// 				strconv.FormatInt(att.AssignmentID, 10),
+// 				strconv.FormatInt(att.EventID, 10),
+// 				eventName,
+// 				strconv.FormatInt(att.CommitteeID, 10),
+// 				committeeName,
+// 				strconv.FormatInt(att.VolunteerID, 10),
+// 				volunteerName,
+// 				formatStringPtr(assignmentShift), // The shift name
+// 				att.CheckInTime.Format(time.RFC3339),
+// 				checkOutTimeStr, // Use the properly formatted checkout time
+// 				formatFloat64Ptr(lat),
+// 				formatFloat64Ptr(lng),
+// 			}
+// 			if err := writer.Write(record); err != nil {
+// 				log.Printf("Error writing CSV record for attendance ID %d: %v", att.ID, err)
+// 			}
+// 		}
+
+// 		if err := rows.Err(); err != nil {
+// 			log.Printf("Error iterating attendance rows for export: %v", err)
+// 			return fiber.NewError(fiber.StatusInternalServerError, "Failed to retrieve all attendance for export")
+// 		}
+
+// 		return nil
+// 	}
+// }
+
+// // attendanceFilters struct for building dynamic queries
+// type attendanceFilters struct {
+// 	EventID     sql.NullInt64
+// 	CommitteeID sql.NullInt64
+// 	VolunteerID sql.NullInt64
+// 	Shift       sql.NullString
+// 	StartDate   sql.NullTime
+// 	EndDate     sql.NullTime
+// 	Limit       int
+// 	Offset      int
+// }
+
+// // buildAttendanceFilters parses query parameters into an attendanceFilters struct
+// func buildAttendanceFilters(c *fiber.Ctx) attendanceFilters {
+// 	filters := attendanceFilters{}
+
+// 	eventIDStr := c.Query("event_id", "")
+// 	if eventIDStr != "" {
+// 		if id, err := strconv.ParseInt(eventIDStr, 10, 64); err == nil {
+// 			filters.EventID = sql.NullInt64{Int64: id, Valid: true}
+// 		}
+// 	}
+
+// 	committeeIDStr := c.Query("committee_id", "")
+// 	if committeeIDStr != "" {
+// 		if id, err := strconv.ParseInt(committeeIDStr, 10, 64); err == nil {
+// 			filters.CommitteeID = sql.NullInt64{Int64: id, Valid: true}
+// 		}
+// 	}
+
+// 	volunteerIDStr := c.Query("volunteer_id", "")
+// 	if volunteerIDStr != "" {
+// 		if id, err := strconv.ParseInt(volunteerIDStr, 10, 64); err == nil {
+// 			filters.VolunteerID = sql.NullInt64{Int64: id, Valid: true}
+// 		}
+// 	}
+
+// 	shiftStr := c.Query("shift", "")
+// 	if shiftStr != "" {
+// 		filters.Shift = sql.NullString{String: shiftStr, Valid: true}
+// 	}
+
+// 	startDateStr := c.Query("start_date", "")
+// 	if startDateStr != "" {
+// 		if t, err := time.Parse("2006-01-02", startDateStr); err == nil {
+// 			filters.StartDate = sql.NullTime{Time: t, Valid: true}
+// 		}
+// 	}
+
+// 	endDateStr := c.Query("end_date", "")
+// 	if endDateStr != "" {
+// 		if t, err := time.Parse("2006-01-02", endDateStr); err == nil {
+// 			filters.EndDate = sql.NullTime{Time: t, Valid: true}
+// 		}
+// 	}
+
+// 	filters.Limit = clampInt(c.QueryInt("limit", 100), 1, 500)
+// 	filters.Offset = maxInt(c.QueryInt("offset", 0), 0)
+
+// 	return filters
+// }
 func ExportAttendanceCSV(pool *pgxpool.Pool) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		filters := buildAttendanceFilters(c) // Re-use filter building logic
@@ -718,7 +930,7 @@ func ExportAttendanceCSV(pool *pgxpool.Pool) fiber.Handler {
 
 		query := `
 		  SELECT a.id, a.assignment_id, a.check_in_time, a.check_out_time, a.lat, a.lng,
-		         v.id AS volunteer_id, v.name AS volunteer_name,
+		         v.id AS volunteer_id, v.name AS volunteer_name, v.college_id AS volunteer_college_id,
 		         c.id AS committee_id, c.name AS committee_name,
 		         e.id AS event_id, e.name AS event_name,
 				 va.shift AS assignment_shift
@@ -744,10 +956,21 @@ func ExportAttendanceCSV(pool *pgxpool.Pool) fiber.Handler {
 		writer := csv.NewWriter(c.Response().BodyWriter())
 		defer writer.Flush()
 
+		// Define the custom format layout
+		const customLayout = "January 02, 2006, 3:04:05 PM MST"
+
+		// Try to load the IST location
+		istLocation, err := time.LoadLocation("Asia/Kolkata")
+		if err != nil {
+			log.Printf("Warning: Could not load 'Asia/Kolkata' timezone, falling back to UTC. Error: %v", err)
+			istLocation = time.UTC // Fallback to UTC
+		}
+
+
 		// Write CSV header
 		header := []string{
 			"Attendance ID", "Assignment ID", "Event ID", "Event Name", "Committee ID", "Committee Name",
-			"Volunteer ID", "Volunteer Name", "Shift", "Check-in Time (ISO)", "Check-out Time (ISO)", "Latitude", "Longitude",
+			"Volunteer ID", "Volunteer Name", "Volunteer College ID", "Shift", "Check-in Time (IST)", "Check-out Time (IST)", "Latitude", "Longitude",
 		}
 		if err := writer.Write(header); err != nil {
 			log.Printf("Error writing CSV header: %v", err)
@@ -763,9 +986,10 @@ func ExportAttendanceCSV(pool *pgxpool.Pool) fiber.Handler {
 			var committeeName string
 			var eventName string
 			var assignmentShift sql.NullString
+			var volunteerCollegeID sql.NullString
 
 			err := rows.Scan(&att.ID, &att.AssignmentID, &att.CheckInTime, &checkOutTime, &lat, &lng,
-				&att.VolunteerID, &volunteerName,
+				&att.VolunteerID, &volunteerName, &volunteerCollegeID,
 				&att.CommitteeID, &committeeName,
 				&att.EventID, &eventName,
 				&assignmentShift)
@@ -775,23 +999,26 @@ func ExportAttendanceCSV(pool *pgxpool.Pool) fiber.Handler {
 			}
 
 			// Populate nullable fields from sql.NullXXX types
-			if checkOutTime.Valid {
-				att.CheckOutTime = &checkOutTime.Time
-			}
 			if lat.Valid {
 				att.Lat = &lat.Float64
 			}
 			if lng.Valid {
 				att.Lng = &lng.Float64
 			}
-			// The `Shift` field in `models.Attendance` is `*string`, so assign directly
 			if assignmentShift.Valid {
 				att.Shift = &assignmentShift.String
 			}
+			if volunteerCollegeID.Valid {
+				att.VolunteerCollegeID = &volunteerCollegeID.String
+			}
 
-			checkOutTimeStr := ""
+			// Format Check-in Time to custom IST format
+			checkInTimeFormatted := att.CheckInTime.In(istLocation).Format(customLayout)
+
+			// Format Check-out Time to custom IST format if valid
+			checkOutTimeFormatted := ""
 			if checkOutTime.Valid {
-				checkOutTimeStr = checkOutTime.Time.Format(time.RFC3339)
+				checkOutTimeFormatted = checkOutTime.Time.In(istLocation).Format(customLayout)
 			}
 
 			record := []string{
@@ -803,9 +1030,10 @@ func ExportAttendanceCSV(pool *pgxpool.Pool) fiber.Handler {
 				committeeName,
 				strconv.FormatInt(att.VolunteerID, 10),
 				volunteerName,
-				formatStringPtr(assignmentShift), // The shift name
-				att.CheckInTime.Format(time.RFC3339),
-				checkOutTimeStr, // Use the properly formatted checkout time
+				formatStringPtr(volunteerCollegeID),
+				formatStringPtr(assignmentShift),
+				checkInTimeFormatted,    // Fixed format to IST
+				checkOutTimeFormatted,   // Fixed format to IST
 				formatFloat64Ptr(lat),
 				formatFloat64Ptr(lng),
 			}
@@ -823,6 +1051,7 @@ func ExportAttendanceCSV(pool *pgxpool.Pool) fiber.Handler {
 	}
 }
 
+// Ensure these helper functions are available in the same package or imported
 // attendanceFilters struct for building dynamic queries
 type attendanceFilters struct {
 	EventID     sql.NullInt64
@@ -884,7 +1113,6 @@ func buildAttendanceFilters(c *fiber.Ctx) attendanceFilters {
 
 	return filters
 }
-
 // shiftCheckinFilters struct for building dynamic queries specific to shifts and dates
 type shiftCheckinFilters struct {
 	EventID     sql.NullInt64
