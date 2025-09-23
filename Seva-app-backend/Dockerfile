@@ -1,4 +1,4 @@
-FROM golang:1.20 AS builder
+FROM golang:1.24 AS builder
 
 WORKDIR /app
 
@@ -11,7 +11,6 @@ RUN go build -o seva-app-backend .
 
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
