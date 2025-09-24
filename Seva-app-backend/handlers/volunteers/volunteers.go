@@ -373,9 +373,6 @@ func BulkUpload(pool *pgxpool.Pool) fiber.Handler {
 		fmt.Printf("Debug - CSV Headers: %v\n", header)
 		idx := createIndexer(header)
 
-		// ADD THIS DEBUG - check if indexer is working:
-		fmt.Printf("Debug - Index for 'Group No': %v\n", idx["Group No"])
-		fmt.Printf("Debug - Index for 'Faculty': %v\n", idx["Faculty"])
 		type rowErr struct {
 			line int
 			msg  string
@@ -383,8 +380,8 @@ func BulkUpload(pool *pgxpool.Pool) fiber.Handler {
 		var rowErrors []rowErr
 		createdVols := 0
 		createdAssigns := 0
-		updatedAssigns := 0
-		line := 1 // header
+		updatedAssigns := 0 // This needs to be actively incremented on ON CONFLICT DO UPDATE
+		line := 1           // header
 
 		tx, err := pool.Begin(c.Context())
 		if err != nil {
@@ -413,22 +410,18 @@ func BulkUpload(pool *pgxpool.Pool) fiber.Handler {
 			email := nullable(trim(get(rec, idx, "email")))
 			phone := nullable(trim(get(rec, idx, "phone")))
 			dept := nullable(trim(get(rec, idx, "dept")))
-			collegeID := nullable(trim(get(rec, idx, "college_id")))
-			rollNo := nullable(trim(get(rec, idx, "roll no"))) // Added Roll No field
+			collegeID := nullable(trim(get(rec, idx, "Roll No")))
 
 			// Extract shift, group, and faculty coordinator
 			shift := nullable(trim(get(rec, idx, "shift")))
 			groupNo := trim(get(rec, idx, "Group No"))
 			facultyCoordinator := trim(get(rec, idx, "Faculty"))
-			fmt.Printf("Debug - Line %d: Raw Faculty value='%s', Raw Group value='%s'\n", line, get(rec, idx, "Faculty"), get(rec, idx, "Group No"))
-			fmt.Printf("Debug - Line %d: Trimmed groupNo='%s', facultyCoordinator='%s'\n", line, groupNo, facultyCoordinator)
-			// Combine group and faculty coordinator into notes as comma-separated values
 			var notesArray []string
 			if groupNo != "" {
-				notesArray = append(notesArray, groupNo)
+				notesArray = append(notesArray, "Group No: "+groupNo)
 			}
 			if facultyCoordinator != "" {
-				notesArray = append(notesArray, facultyCoordinator)
+				notesArray = append(notesArray, "Faculty: "+facultyCoordinator)
 			}
 
 			var notes *string
@@ -467,79 +460,69 @@ func BulkUpload(pool *pgxpool.Pool) fiber.Handler {
 			}
 
 			var vID int64
-			var existingEmail string
 			var existsAsFaculty bool
 
-			// Handle volunteer creation/lookup logic
-			if email != nil {
+			// Try to find volunteer by email or college_id
+			foundVolunteer := false
+			if email != nil && *email != "" {
 				err = tx.QueryRow(c.Context(), `SELECT id FROM volunteers WHERE lower(email)=$1`, *email).Scan(&vID)
-				if errors.Is(err, sql.ErrNoRows) {
-					err = tx.QueryRow(c.Context(), `SELECT email FROM faculty WHERE lower(email)=$1`, *email).Scan(&existingEmail)
-					if err == nil {
-						existsAsFaculty = true
-					} else if !errors.Is(err, sql.ErrNoRows) {
-						rowErrors = append(rowErrors, rowErr{line, fmt.Sprintf("check existing faculty: %v", err)})
-						continue
-					}
-					if !existsAsFaculty {
-						err = tx.QueryRow(c.Context(), `
-							INSERT INTO volunteers(name, email, phone, dept, college_id, roll_no, role)
-							VALUES ($1,$2,$3,$4,$5,$6,$7)
-							RETURNING id
-						`, name, email, phone, dept, collegeID, rollNo, models.UserRoleVolunteer).Scan(&vID)
-						if err != nil {
-							rowErrors = append(rowErrors, rowErr{line, fmt.Sprintf("insert volunteer: %v", err)})
-							continue
-						}
-						createdVols++
-					} else {
-						rowErrors = append(rowErrors, rowErr{line, fmt.Sprintf("email '%s' is already registered as a faculty member", *email)})
-						continue
-					}
-				} else if err != nil {
-					rowErrors = append(rowErrors, rowErr{line, fmt.Sprintf("check existing volunteer: %v", err)})
+				if err == nil {
+					foundVolunteer = true
+				} else if !errors.Is(err, sql.ErrNoRows) {
+					rowErrors = append(rowErrors, rowErr{line, fmt.Sprintf("check existing volunteer by email: %v", err)})
 					continue
-				}
-			} else {
-				// Handle case where email is not provided - maybe lookup by roll_no or create new
-				if rollNo != nil {
-					err = tx.QueryRow(c.Context(), `SELECT id FROM volunteers WHERE roll_no=$1`, *rollNo).Scan(&vID)
-					if errors.Is(err, sql.ErrNoRows) {
-						// Create new volunteer without email
-						err = tx.QueryRow(c.Context(), `
-							INSERT INTO volunteers(name, email, phone, dept, college_id, roll_no, role)
-							VALUES ($1,$2,$3,$4,$5,$6,$7)
-							RETURNING id
-						`, name, nil, phone, dept, collegeID, rollNo, models.UserRoleVolunteer).Scan(&vID)
-						if err != nil {
-							rowErrors = append(rowErrors, rowErr{line, fmt.Sprintf("insert volunteer (no email): %v", err)})
-							continue
-						}
-						createdVols++
-					} else if err != nil {
-						rowErrors = append(rowErrors, rowErr{line, fmt.Sprintf("check existing volunteer by roll_no: %v", err)})
-						continue
-					}
-				} else {
-					// No email and no roll_no - create new volunteer
-					err = tx.QueryRow(c.Context(), `
-						INSERT INTO volunteers(name, email, phone, dept, college_id, roll_no, role)
-						VALUES ($1,$2,$3,$4,$5,$6,$7)
-						RETURNING id
-					`, name, nil, phone, dept, collegeID, nil, models.UserRoleVolunteer).Scan(&vID)
-					if err != nil {
-						rowErrors = append(rowErrors, rowErr{line, fmt.Sprintf("insert volunteer (no email/roll_no): %v", err)})
-						continue
-					}
-					createdVols++
 				}
 			}
 
-			var resultID int64
-			err = tx.QueryRow(c.Context(), `
-				INSERT INTO volunteer_assignments(event_id, committee_id, volunteer_id, role, status, reporting_time, shift, start_time, end_time, notes)
-				VALUES ($1,$2,$3,$4::assignment_role,$5::assignment_status,$6,$7,$8,$9,$10)
-				ON CONFLICT (event_id, committee_id, volunteer_id) DO UPDATE SET
+			if !foundVolunteer && collegeID != nil && *collegeID != "" {
+				err = tx.QueryRow(c.Context(), `SELECT id FROM volunteers WHERE college_id=$1`, *collegeID).Scan(&vID)
+				if err == nil {
+					foundVolunteer = true
+				} else if !errors.Is(err, sql.ErrNoRows) {
+					rowErrors = append(rowErrors, rowErr{line, fmt.Sprintf("check existing volunteer by college_id: %v", err)})
+					continue
+				}
+			}
+
+			// If not found, check if email/college_id conflicts with faculty
+			if !foundVolunteer {
+				if email != nil && *email != "" {
+					err = tx.QueryRow(c.Context(), `SELECT 1 FROM faculty WHERE lower(email)=$1`, *email).Scan(&existsAsFaculty)
+					if err == nil {
+						existsAsFaculty = true
+					} else if !errors.Is(err, sql.ErrNoRows) {
+						rowErrors = append(rowErrors, rowErr{line, fmt.Sprintf("check existing faculty by email: %v", err)})
+						continue
+					}
+					if existsAsFaculty {
+						rowErrors = append(rowErrors, rowErr{line, fmt.Sprintf("email '%s' is already registered as a faculty member", *email)})
+						continue
+					}
+				}
+				// Create new volunteer
+				err = tx.QueryRow(c.Context(), `
+					INSERT INTO volunteers(name, email, phone, dept, college_id, role)
+					VALUES ($1,$2,$3,$4,$5,$6)
+					RETURNING id
+				`, name, email, phone, dept, collegeID, models.UserRoleVolunteer).Scan(&vID)
+				if err != nil {
+					if strings.Contains(err.Error(), "volunteers_college_id_key") && collegeID != nil && *collegeID != "" {
+						rowErrors = append(rowErrors, rowErr{line, fmt.Sprintf("Volunteer with college ID '%s' already exists.", *collegeID)})
+					} else if strings.Contains(err.Error(), "volunteers_email_key") && email != nil && *email != "" {
+						rowErrors = append(rowErrors, rowErr{line, fmt.Sprintf("Volunteer with email '%s' already exists.", *email)})
+					} else {
+						rowErrors = append(rowErrors, rowErr{line, fmt.Sprintf("insert volunteer: %v", err)})
+					}
+					continue
+				}
+				createdVols++
+			}
+
+			// Insert or update assignment
+			var assignmentID int64
+			var onConflictClause string
+			if assignRole == "lead" { // Example: If role is lead, maybe update existing lead assignment or create new
+				onConflictClause = `ON CONFLICT (event_id, committee_id, volunteer_id) DO UPDATE SET
 					role = EXCLUDED.role,
 					status = EXCLUDED.status,
 					reporting_time = EXCLUDED.reporting_time,
@@ -547,13 +530,43 @@ func BulkUpload(pool *pgxpool.Pool) fiber.Handler {
 					start_time = EXCLUDED.start_time,
 					end_time = EXCLUDED.end_time,
 					notes = EXCLUDED.notes
+				`
+			} else {
+				// Default behavior, assumes unique constraint (event_id, committee_id, volunteer_id) handles updates
+				onConflictClause = `ON CONFLICT (event_id, committee_id, volunteer_id) DO UPDATE SET
+					role = EXCLUDED.role,
+					status = EXCLUDED.status,
+					reporting_time = EXCLUDED.reporting_time,
+					shift = EXCLUDED.shift,
+					start_time = EXCLUDED.start_time,
+					end_time = EXCLUDED.end_time,
+					notes = EXCLUDED.notes
+				`
+			}
+
+			// Check if an existing assignment will be updated
+			var existingAssignmentID sql.NullInt64
+			_ = tx.QueryRow(c.Context(), `
+				SELECT id FROM volunteer_assignments
+				WHERE event_id = $1 AND committee_id = $2 AND volunteer_id = $3
+			`, eventID, committeeID, vID).Scan(&existingAssignmentID)
+
+			err = tx.QueryRow(c.Context(), `
+				INSERT INTO volunteer_assignments(event_id, committee_id, volunteer_id, role, status, reporting_time, shift, start_time, end_time, notes)
+				VALUES ($1,$2,$3,$4::assignment_role,$5::assignment_status,$6,$7,$8,$9,$10)
+				`+onConflictClause+`
 				RETURNING id
-			`, eventID, committeeID, vID, assignRole, assignStatus, rt, shift, startTime, endTime, notes).Scan(&resultID)
+			`, eventID, committeeID, vID, assignRole, assignStatus, rt, shift, startTime, endTime, notes).Scan(&assignmentID)
 			if err != nil {
 				rowErrors = append(rowErrors, rowErr{line, fmt.Sprintf("insert/update assignment: %v", err)})
 				continue
 			}
-			createdAssigns++
+
+			if existingAssignmentID.Valid {
+				updatedAssigns++
+			} else {
+				createdAssigns++
+			}
 		}
 
 		if err := tx.Commit(c.Context()); err != nil {
@@ -638,7 +651,7 @@ func ExportAssignmentsCSV(pool *pgxpool.Pool) fiber.Handler {
 			SELECT
 				va.id, va.event_id, va.committee_id, va.volunteer_id,
 				va.role::text, va.status::text, va.reporting_time, va.shift, va.start_time, va.end_time, va.notes, va.created_at,
-				v.name AS volunteer_name, v.email AS volunteer_email,
+				v.name AS volunteer_name, v.email AS volunteer_email, v.college_id AS volunteer_college_id, -- NEW
 				c.name AS committee_name,
 				e.name AS event_name
 			FROM volunteer_assignments va
@@ -660,7 +673,8 @@ func ExportAssignmentsCSV(pool *pgxpool.Pool) fiber.Handler {
 
 		// Write CSV header
 		header := []string{
-			"Assignment ID", "Event ID", "Event Name", "Committee ID", "Committee Name", "Volunteer ID", "Volunteer Name", "Volunteer Email",
+			"Assignment ID", "Event ID", "Event Name", "Committee ID", "Committee Name",
+			"Volunteer ID", "Volunteer Name", "Volunteer Email", "Volunteer College ID", // NEW
 			"Role", "Status", "Reporting Time (ISO)", "Shift", "Start Time (ISO)", "End Time (ISO)", "Notes", "Created At (ISO)",
 		}
 		if err := writer.Write(header); err != nil {
@@ -671,16 +685,20 @@ func ExportAssignmentsCSV(pool *pgxpool.Pool) fiber.Handler {
 		for rows.Next() {
 			var a models.VolunteerAssignment
 			var roleStr, statusStr string
+			var volunteerEmail, volunteerCollegeID sql.NullString // NEW: For scanning college_id
 			if err := rows.Scan(
 				&a.ID, &a.EventID, &a.CommitteeID, &a.VolunteerID,
 				&roleStr, &statusStr, &a.ReportingTime, &a.Shift, &a.StartTime, &a.EndTime, &a.Notes, &a.CreatedAt,
-				&a.VolunteerName, &a.VolunteerEmail, &a.CommitteeName, &a.EventName,
+				&a.VolunteerName, &volunteerEmail, &volunteerCollegeID, // NEW: Scan into volunteerCollegeID
+				&a.CommitteeName, &a.EventName,
 			); err != nil {
 				log.Printf("Error scanning assignment row for export: %v", err)
 				continue
 			}
 			a.Role = models.AssignmentRole(roleStr)
 			a.Status = models.AssignmentStatus(statusStr)
+			a.VolunteerEmail = derefNullString(volunteerEmail)         // Assign dereferenced email
+			a.VolunteerCollegeID = derefNullString(volunteerCollegeID) // NEW: Assign dereferenced college ID
 
 			record := []string{
 				strconv.FormatInt(a.ID, 10),
@@ -691,6 +709,7 @@ func ExportAssignmentsCSV(pool *pgxpool.Pool) fiber.Handler {
 				strconv.FormatInt(a.VolunteerID, 10),
 				a.VolunteerName,
 				derefString(a.VolunteerEmail),
+				derefString(a.VolunteerCollegeID), // NEW: Output college ID
 				string(a.Role),
 				string(a.Status),
 				formatTimePtr(a.ReportingTime),
@@ -733,6 +752,8 @@ func CreateAssignment(pool *pgxpool.Pool) fiber.Handler {
 
 		var assignment models.VolunteerAssignment
 		var roleStr, statusStr string
+		var volunteerEmail, volunteerCollegeID sql.NullString // NEW: For enriched fields
+		// The RETURNING clause needs to match the structure of the SELECT below for enriched fields
 		err := pool.QueryRow(c.Context(), `
 			INSERT INTO volunteer_assignments(event_id, committee_id, volunteer_id, role, status, reporting_time, shift, start_time, end_time, notes)
 			VALUES ($1,$2,$3,$4::assignment_role,$5::assignment_status,$6,$7,$8,$9,$10)
@@ -744,7 +765,8 @@ func CreateAssignment(pool *pgxpool.Pool) fiber.Handler {
 				start_time = EXCLUDED.start_time,
 				end_time = EXCLUDED.end_time,
 				notes = EXCLUDED.notes
-			RETURNING id, event_id, committee_id, volunteer_id, role::text, status::text, reporting_time, shift, start_time, end_time, notes, created_at
+			RETURNING id, event_id, committee_id, volunteer_id, role::text, status::text, 
+				reporting_time, shift, start_time, end_time, notes, created_at
 		`, b.EventID, b.CommitteeID, b.VolunteerID, role, status, b.ReportingTime, b.Shift, b.StartTime, b.EndTime, b.Notes).
 			Scan(&assignment.ID, &assignment.EventID, &assignment.CommitteeID, &assignment.VolunteerID,
 				&roleStr, &statusStr, &assignment.ReportingTime, &assignment.Shift, &assignment.StartTime, &assignment.EndTime, &assignment.Notes, &assignment.CreatedAt)
@@ -753,6 +775,29 @@ func CreateAssignment(pool *pgxpool.Pool) fiber.Handler {
 		}
 		assignment.Role = models.AssignmentRole(roleStr)
 		assignment.Status = models.AssignmentStatus(statusStr)
+
+		// Now fetch the enriched fields after the insert/update
+		err = pool.QueryRow(c.Context(), `
+			SELECT 
+				v.name AS volunteer_name, v.email AS volunteer_email, v.college_id AS volunteer_college_id,
+				c.name AS committee_name, e.name AS event_name
+			FROM volunteer_assignments va
+			JOIN volunteers v ON v.id = va.volunteer_id
+			JOIN committees c ON c.id = va.committee_id
+			JOIN events e ON e.id = va.event_id
+			WHERE va.id = $1
+		`, assignment.ID).Scan(
+			&assignment.VolunteerName, &volunteerEmail, &volunteerCollegeID,
+			&assignment.CommitteeName, &assignment.EventName,
+		)
+		if err != nil {
+			// This would be an unexpected error if the assignment was just created/updated
+			log.Printf("Error fetching enriched assignment fields: %v", err)
+			// Decide how to handle this - either return error or proceed with partial data
+		}
+		assignment.VolunteerEmail = derefNullString(volunteerEmail)
+		assignment.VolunteerCollegeID = derefNullString(volunteerCollegeID)
+
 		return c.Status(fiber.StatusCreated).JSON(assignment)
 	}
 }
@@ -807,7 +852,7 @@ func ListAssignments(pool *pgxpool.Pool) fiber.Handler {
 			SELECT
 				va.id, va.event_id, va.committee_id, va.volunteer_id,
 				va.role::text, va.status::text, va.reporting_time, va.shift, va.start_time, va.end_time, va.notes, va.created_at,
-				v.name AS volunteer_name, v.email AS volunteer_email,
+				v.name AS volunteer_name, v.email AS volunteer_email, v.college_id AS volunteer_college_id, -- NEW
 				c.name AS committee_name,
 				e.name AS event_name
 			FROM volunteer_assignments va
@@ -830,16 +875,19 @@ func ListAssignments(pool *pgxpool.Pool) fiber.Handler {
 		for rows.Next() {
 			var a models.VolunteerAssignment
 			var roleStr, statusStr string
+			var volunteerEmail, volunteerCollegeID sql.NullString // NEW
 			if err := rows.Scan(
 				&a.ID, &a.EventID, &a.CommitteeID, &a.VolunteerID,
 				&roleStr, &statusStr, &a.ReportingTime, &a.Shift, &a.StartTime, &a.EndTime, &a.Notes, &a.CreatedAt,
-				&a.VolunteerName, &a.VolunteerEmail, &a.CommitteeName, &a.EventName,
+				&a.VolunteerName, &volunteerEmail, &volunteerCollegeID, &a.CommitteeName, &a.EventName, // NEW
 			); err != nil {
 				log.Printf("Error scanning assignment row: %v", err)
 				return err
 			}
 			a.Role = models.AssignmentRole(roleStr)
 			a.Status = models.AssignmentStatus(statusStr)
+			a.VolunteerEmail = derefNullString(volunteerEmail)         // NEW
+			a.VolunteerCollegeID = derefNullString(volunteerCollegeID) // NEW
 			out = append(out, a)
 		}
 		if err := rows.Err(); err != nil {
@@ -860,11 +908,12 @@ func GetAssignmentByID(pool *pgxpool.Pool) fiber.Handler {
 
 		var a models.VolunteerAssignment
 		var roleStr, statusStr string
+		var volunteerEmail, volunteerCollegeID sql.NullString // NEW
 		err = pool.QueryRow(c.Context(), `
 			SELECT
 				va.id, va.event_id, va.committee_id, va.volunteer_id,
 				va.role::text, va.status::text, va.reporting_time, va.shift, va.start_time, va.end_time, va.notes, va.created_at,
-				v.name AS volunteer_name, v.email AS volunteer_email,
+				v.name AS volunteer_name, v.email AS volunteer_email, v.college_id AS volunteer_college_id, -- NEW
 				c.name AS committee_name,
 				e.name AS event_name
 			FROM volunteer_assignments va
@@ -875,7 +924,7 @@ func GetAssignmentByID(pool *pgxpool.Pool) fiber.Handler {
 		`, id).Scan(
 			&a.ID, &a.EventID, &a.CommitteeID, &a.VolunteerID,
 			&roleStr, &statusStr, &a.ReportingTime, &a.Shift, &a.StartTime, &a.EndTime, &a.Notes, &a.CreatedAt,
-			&a.VolunteerName, &a.VolunteerEmail, &a.CommitteeName, &a.EventName,
+			&a.VolunteerName, &volunteerEmail, &volunteerCollegeID, &a.CommitteeName, &a.EventName, // NEW
 		)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -885,6 +934,8 @@ func GetAssignmentByID(pool *pgxpool.Pool) fiber.Handler {
 		}
 		a.Role = models.AssignmentRole(roleStr)
 		a.Status = models.AssignmentStatus(statusStr)
+		a.VolunteerEmail = derefNullString(volunteerEmail)         // NEW
+		a.VolunteerCollegeID = derefNullString(volunteerCollegeID) // NEW
 		return c.JSON(a)
 	}
 }
@@ -1072,7 +1123,7 @@ func GetMyAssignments(pool *pgxpool.Pool) fiber.Handler {
 			SELECT
 				va.id, va.event_id, va.committee_id, va.volunteer_id,
 				va.role::text, va.status::text, va.reporting_time, va.shift, va.start_time, va.end_time, va.notes, va.created_at,
-				v.name AS volunteer_name, v.email AS volunteer_email,
+				v.name AS volunteer_name, v.email AS volunteer_email, v.college_id AS volunteer_college_id, -- NEW
 				c.name AS committee_name,
 				e.name AS event_name,
 				-- Check for active attendance today for this assignment
@@ -1100,16 +1151,19 @@ func GetMyAssignments(pool *pgxpool.Pool) fiber.Handler {
 			var a MyAssignment
 			var roleStr, statusStr string
 			var activeAttendanceID sql.NullInt64
+			var volunteerEmail, volunteerCollegeID sql.NullString // NEW
 			if err := rows.Scan(
 				&a.ID, &a.EventID, &a.CommitteeID, &a.VolunteerID,
 				&roleStr, &statusStr, &a.ReportingTime, &a.Shift, &a.StartTime, &a.EndTime, &a.Notes, &a.CreatedAt,
-				&a.VolunteerName, &a.VolunteerEmail, &a.CommitteeName, &a.EventName,
+				&a.VolunteerName, &volunteerEmail, &volunteerCollegeID, &a.CommitteeName, &a.EventName, // NEW
 				&activeAttendanceID,
 			); err != nil {
 				return err
 			}
 			a.Role = models.AssignmentRole(roleStr)
 			a.Status = models.AssignmentStatus(statusStr)
+			a.VolunteerEmail = derefNullString(volunteerEmail)         // NEW
+			a.VolunteerCollegeID = derefNullString(volunteerCollegeID) // NEW
 			a.ActiveAttendanceID = activeAttendanceID
 			a.IsCheckedInToday = activeAttendanceID.Valid // If ID is valid, they are checked in today
 			out = append(out, a)
@@ -1248,6 +1302,16 @@ func nullable(s string) *string {
 	}
 	return &s
 }
+
+// derefNullString is a helper to convert sql.NullString to *string.
+// Useful for populating models.VolunteerAssignment.VolunteerEmail and .VolunteerCollegeID.
+func derefNullString(s sql.NullString) *string {
+	if s.Valid {
+		return &s.String
+	}
+	return nil
+}
+
 func clampInt(v, lo, hi int) int {
 	if v < lo {
 		return lo

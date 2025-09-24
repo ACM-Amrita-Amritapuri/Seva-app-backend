@@ -210,6 +210,7 @@ func ListShiftsWithoutCheckIn(pool *pgxpool.Pool) fiber.Handler {
 		    va.volunteer_id,
 		    v.name AS volunteer_name,
 		    v.dept AS volunteer_dept,
+			v.college_id AS volunteer_college_id, -- NEW
 		    c.name AS committee_name,
 		    e.name AS event_name,
 			va.role::text AS assignment_role_text,
@@ -241,13 +242,13 @@ func ListShiftsWithoutCheckIn(pool *pgxpool.Pool) fiber.Handler {
 		out := make([]models.PendingShiftRow, 0, filters.Limit)
 		for rows.Next() {
 			var r models.PendingShiftRow
-			var volunteerDept sql.NullString
+			var volunteerDept, volunteerCollegeID sql.NullString // NEW: collegeID
 			var reportingTime, startTime, endTime sql.NullTime
 			var shift, notes, assignmentRoleStr, assignmentStatusStr sql.NullString
 
 			err := rows.Scan(
 				&r.AssignmentID, &r.EventID, &r.CommitteeID, &r.VolunteerID,
-				&r.VolunteerName, &volunteerDept, &r.CommitteeName, &r.EventName,
+				&r.VolunteerName, &volunteerDept, &volunteerCollegeID, &r.CommitteeName, &r.EventName, // NEW: Scan collegeID
 				&assignmentRoleStr, &assignmentStatusStr, &reportingTime, &startTime, &endTime, &shift, &notes,
 			)
 			if err != nil {
@@ -257,6 +258,9 @@ func ListShiftsWithoutCheckIn(pool *pgxpool.Pool) fiber.Handler {
 
 			if volunteerDept.Valid {
 				r.VolunteerDept = &volunteerDept.String
+			}
+			if volunteerCollegeID.Valid { // NEW
+				r.VolunteerCollegeID = &volunteerCollegeID.String
 			}
 			if reportingTime.Valid {
 				r.ReportingTime = &reportingTime.Time
@@ -321,7 +325,7 @@ func ListActiveCheckinsInShift(pool *pgxpool.Pool) fiber.Handler {
 		  SELECT
 		    a.id, a.assignment_id, a.check_in_time, a.check_out_time, a.lat, a.lng,
 			va.shift, -- NEW: Include shift from assignment
-		    v.id AS volunteer_id, v.name AS volunteer_name,
+		    v.id AS volunteer_id, v.name AS volunteer_name, v.college_id AS volunteer_college_id, -- NEW
 		    c.id AS committee_id, c.name AS committee_name,
 		    e.id AS event_id, e.name AS event_name
 		  FROM attendance a
@@ -345,11 +349,12 @@ func ListActiveCheckinsInShift(pool *pgxpool.Pool) fiber.Handler {
 			var att models.Attendance
 			var checkOutTime sql.NullTime
 			var lat, lng sql.NullFloat64
-			var shift sql.NullString // NEW: Scan shift
+			var shift sql.NullString
+			var volunteerCollegeID sql.NullString // NEW
 
 			err := rows.Scan(&att.ID, &att.AssignmentID, &att.CheckInTime, &checkOutTime, &lat, &lng,
-				&shift, // NEW: Scan shift
-				&att.VolunteerID, &att.VolunteerName,
+				&shift,
+				&att.VolunteerID, &att.VolunteerName, &volunteerCollegeID, // NEW
 				&att.CommitteeID, &att.CommitteeName,
 				&att.EventID, &att.EventName)
 			if err != nil {
@@ -368,7 +373,10 @@ func ListActiveCheckinsInShift(pool *pgxpool.Pool) fiber.Handler {
 			}
 			if shift.Valid {
 				att.Shift = &shift.String
-			} // NEW: Assign shift
+			}
+			if volunteerCollegeID.Valid { // NEW
+				att.VolunteerCollegeID = &volunteerCollegeID.String
+			}
 
 			out = append(out, att)
 
@@ -381,14 +389,6 @@ func ListActiveCheckinsInShift(pool *pgxpool.Pool) fiber.Handler {
 // Lists all volunteers currently checked in (check_out_time IS NULL) for any shift within a specific committee.
 func ListActiveCheckinsInCommittee(pool *pgxpool.Pool) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// eventIDFilter := sql.NullInt64{}
-		// eventIDStr := c.Query("event_id", "")
-		// if eventIDStr != "" {
-		// 	if id, err := strconv.ParseInt(eventIDStr, 10, 64); err != nil {
-		// 		return fiber.NewError(fiber.StatusBadRequest, "invalid event_id")
-		// 	}
-		// 	eventIDFilter = sql.NullInt64{Int64: id, Valid: true}
-		// }
 		eventIDFilter := sql.NullInt64{}
 		eventIDStr := c.Query("event_id", "")
 		if eventIDStr != "" {
@@ -435,7 +435,7 @@ func ListActiveCheckinsInCommittee(pool *pgxpool.Pool) fiber.Handler {
 		  SELECT
 		    a.id, a.assignment_id, a.check_in_time, a.check_out_time, a.lat, a.lng,
 			va.shift, -- NEW: Include shift from assignment
-		    v.id AS volunteer_id, v.name AS volunteer_name,
+		    v.id AS volunteer_id, v.name AS volunteer_name, v.college_id AS volunteer_college_id, -- NEW
 		    c.id AS committee_id, c.name AS committee_name,
 		    e.id AS event_id, e.name AS event_name
 		  FROM attendance a
@@ -460,10 +460,11 @@ func ListActiveCheckinsInCommittee(pool *pgxpool.Pool) fiber.Handler {
 			var checkOutTime sql.NullTime
 			var lat, lng sql.NullFloat64
 			var shift sql.NullString
+			var volunteerCollegeID sql.NullString // NEW
 
 			err := rows.Scan(&att.ID, &att.AssignmentID, &att.CheckInTime, &checkOutTime, &lat, &lng,
 				&shift,
-				&att.VolunteerID, &att.VolunteerName,
+				&att.VolunteerID, &att.VolunteerName, &volunteerCollegeID, // NEW
 				&att.CommitteeID, &att.CommitteeName,
 				&att.EventID, &att.EventName)
 			if err != nil {
@@ -482,6 +483,9 @@ func ListActiveCheckinsInCommittee(pool *pgxpool.Pool) fiber.Handler {
 			}
 			if shift.Valid {
 				att.Shift = &shift.String
+			}
+			if volunteerCollegeID.Valid { // NEW
+				att.VolunteerCollegeID = &volunteerCollegeID.String
 			}
 
 			out = append(out, att)
@@ -610,10 +614,10 @@ func ListAllAttendance(pool *pgxpool.Pool) fiber.Handler {
 		args = append(args, filters.Limit, filters.Offset)
 		query := `
 		  SELECT a.id, a.assignment_id, a.check_in_time, a.check_out_time, a.lat, a.lng,
-		         v.id AS volunteer_id, v.name AS volunteer_name,
+		         v.id AS volunteer_id, v.name AS volunteer_name, v.college_id AS volunteer_college_id, -- NEW
 		         c.id AS committee_id, c.name AS committee_name,
 		         e.id AS event_id, e.name AS event_name,
-				 va.shift AS assignment_shift -- NEW: Select shift
+				 va.shift AS assignment_shift
 		  FROM attendance a
 		  JOIN volunteer_assignments va ON va.id = a.assignment_id
 		  JOIN volunteers v ON v.id = va.volunteer_id
@@ -635,13 +639,14 @@ func ListAllAttendance(pool *pgxpool.Pool) fiber.Handler {
 			var att models.Attendance
 			var checkOutTime sql.NullTime
 			var lat, lng sql.NullFloat64
-			var assignmentShift sql.NullString // NEW: Scan into a NullString first
+			var assignmentShift sql.NullString
+			var volunteerCollegeID sql.NullString // NEW
 
 			err := rows.Scan(&att.ID, &att.AssignmentID, &att.CheckInTime, &checkOutTime, &lat, &lng,
-				&att.VolunteerID, &att.VolunteerName,
+				&att.VolunteerID, &att.VolunteerName, &volunteerCollegeID, // NEW
 				&att.CommitteeID, &att.CommitteeName,
 				&att.EventID, &att.EventName,
-				&assignmentShift) // NEW: Scan assignment_shift
+				&assignmentShift)
 			if err != nil {
 				log.Printf("Error scanning attendance row for ListAllAttendance: %v", err)
 				return err
@@ -658,7 +663,10 @@ func ListAllAttendance(pool *pgxpool.Pool) fiber.Handler {
 			}
 			if assignmentShift.Valid {
 				att.Shift = &assignmentShift.String
-			} // NEW: Assign to att.Shift
+			}
+			if volunteerCollegeID.Valid { // NEW
+				att.VolunteerCollegeID = &volunteerCollegeID.String
+			}
 
 			out = append(out, att)
 		}
@@ -718,7 +726,7 @@ func ExportAttendanceCSV(pool *pgxpool.Pool) fiber.Handler {
 
 		query := `
 		  SELECT a.id, a.assignment_id, a.check_in_time, a.check_out_time, a.lat, a.lng,
-		         v.id AS volunteer_id, v.name AS volunteer_name,
+		         v.id AS volunteer_id, v.name AS volunteer_name, v.college_id AS volunteer_college_id, -- NEW
 		         c.id AS committee_id, c.name AS committee_name,
 		         e.id AS event_id, e.name AS event_name,
 				 va.shift AS assignment_shift
@@ -747,8 +755,8 @@ func ExportAttendanceCSV(pool *pgxpool.Pool) fiber.Handler {
 		// Write CSV header
 		header := []string{
 			"Attendance ID", "Assignment ID", "Event ID", "Event Name", "Committee ID", "Committee Name",
-			"Volunteer ID", "Volunteer Name", "Shift", "Check-in Time (ISO)", "Check-out Time (ISO)", "Latitude", "Longitude",
-		}
+			"Volunteer ID", "Volunteer Name", "Volunteer College ID", "Shift", "Check-in Time (ISO)", "Check-out Time (ISO)", "Latitude", "Longitude",
+		} // NEW: Added Volunteer College ID
 		if err := writer.Write(header); err != nil {
 			log.Printf("Error writing CSV header: %v", err)
 			return fiber.NewError(fiber.StatusInternalServerError, "Failed to write CSV header")
@@ -763,9 +771,10 @@ func ExportAttendanceCSV(pool *pgxpool.Pool) fiber.Handler {
 			var committeeName string
 			var eventName string
 			var assignmentShift sql.NullString
+			var volunteerCollegeID sql.NullString // NEW
 
 			err := rows.Scan(&att.ID, &att.AssignmentID, &att.CheckInTime, &checkOutTime, &lat, &lng,
-				&att.VolunteerID, &volunteerName,
+				&att.VolunteerID, &volunteerName, &volunteerCollegeID, // NEW
 				&att.CommitteeID, &committeeName,
 				&att.EventID, &eventName,
 				&assignmentShift)
@@ -788,6 +797,9 @@ func ExportAttendanceCSV(pool *pgxpool.Pool) fiber.Handler {
 			if assignmentShift.Valid {
 				att.Shift = &assignmentShift.String
 			}
+			if volunteerCollegeID.Valid { // NEW
+				att.VolunteerCollegeID = &volunteerCollegeID.String
+			}
 
 			checkOutTimeStr := ""
 			if checkOutTime.Valid {
@@ -803,7 +815,8 @@ func ExportAttendanceCSV(pool *pgxpool.Pool) fiber.Handler {
 				committeeName,
 				strconv.FormatInt(att.VolunteerID, 10),
 				volunteerName,
-				formatStringPtr(assignmentShift), // The shift name
+				formatStringPtr(volunteerCollegeID), // NEW: The volunteer's college ID
+				formatStringPtr(assignmentShift),    // The shift name
 				att.CheckInTime.Format(time.RFC3339),
 				checkOutTimeStr, // Use the properly formatted checkout time
 				formatFloat64Ptr(lat),
@@ -925,6 +938,7 @@ func buildShiftCheckinFilters(c *fiber.Ctx) shiftCheckinFilters {
 		} else {
 			// If date is invalid, set a default to prevent query errors, or return an error.
 			// For simplicity, defaulting to today if provided but invalid.
+			log.Printf("Warning: Could not parse date '%s': %v", dateStr, err) // Log the error
 			filters.Date = sql.NullTime{Time: time.Now().Truncate(24 * time.Hour), Valid: true}
 		}
 	} else {
@@ -986,8 +1000,6 @@ func formatFloat64Ptr(nf sql.NullFloat64) string {
 	}
 	return ""
 }
-
-// ... (Keep CheckIn, CheckOut, ListShiftsWithoutCheckIn, ListActiveCheckinsInShift, ListActiveCheckinsInCommittee, CheckoutShift, ListAllAttendance, ExportAttendanceCSV functions as they are) ...
 
 // NEW: Filter struct for ListAssignmentsWithCheckinStatus
 type assignmentStatusFilters struct {
@@ -1122,7 +1134,7 @@ func ListAssignmentsWithCheckinStatus(pool *pgxpool.Pool) fiber.Handler {
 			// This branch should ideally not be hit if buildAssignmentStatusFilters defaults to today
 			attendanceCheckDateParam = sql.NullTime{Time: time.Now().Truncate(24 * time.Hour), Valid: true}
 		}
-		args = append(args, attendanceCheckDateParam) // Add attendance check date to args
+		args = append(args, attendanceCheckDateParam.Time) // Add attendance check date to args
 		attendanceCheckDatePlaceholder := "$" + strconv.Itoa(paramCounter)
 		paramCounter++
 
@@ -1132,7 +1144,7 @@ func ListAssignmentsWithCheckinStatus(pool *pgxpool.Pool) fiber.Handler {
 		  SELECT
 		    va.id, va.event_id, va.committee_id, va.volunteer_id,
 		    va.role::text, va.status::text, va.reporting_time, va.shift, va.start_time, va.end_time, va.notes, va.created_at,
-		    v.name AS volunteer_name, v.email AS volunteer_email,
+		    v.name AS volunteer_name, v.email AS volunteer_email, v.college_id AS volunteer_college_id, -- NEW
 		    c.name AS committee_name,
 		    e.name AS event_name,
 		    (
@@ -1163,11 +1175,12 @@ func ListAssignmentsWithCheckinStatus(pool *pgxpool.Pool) fiber.Handler {
 			var assignment models.AssignmentWithCheckinStatus
 			var roleStr, statusStr string
 			var activeAttendanceID sql.NullInt64
+			var volunteerEmail, volunteerCollegeID sql.NullString // NEW
 
 			err := rows.Scan(
 				&assignment.ID, &assignment.EventID, &assignment.CommitteeID, &assignment.VolunteerID,
 				&roleStr, &statusStr, &assignment.ReportingTime, &assignment.Shift, &assignment.StartTime, &assignment.EndTime, &assignment.Notes, &assignment.CreatedAt,
-				&assignment.VolunteerName, &assignment.VolunteerEmail, &assignment.CommitteeName, &assignment.EventName,
+				&assignment.VolunteerName, &volunteerEmail, &volunteerCollegeID, &assignment.CommitteeName, &assignment.EventName, // NEW
 				&activeAttendanceID, // Scan the result of the subquery
 			)
 			if err != nil {
@@ -1177,6 +1190,8 @@ func ListAssignmentsWithCheckinStatus(pool *pgxpool.Pool) fiber.Handler {
 
 			assignment.Role = models.AssignmentRole(roleStr)
 			assignment.Status = models.AssignmentStatus(statusStr)
+			assignment.VolunteerEmail = derefNullString(volunteerEmail)         // NEW
+			assignment.VolunteerCollegeID = derefNullString(volunteerCollegeID) // NEW
 			assignment.ActiveAttendanceID = activeAttendanceID
 			assignment.IsCheckedIn = activeAttendanceID.Valid // If ActiveAttendanceID is valid, they are checked in
 
@@ -1189,5 +1204,9 @@ func ListAssignmentsWithCheckinStatus(pool *pgxpool.Pool) fiber.Handler {
 		return c.JSON(out)
 	}
 }
-
-// ... (Keep existing attendanceFilters, buildAttendanceFilters, shiftCheckinFilters, buildShiftCheckinFilters, and helper functions as they are) ...
+func derefNullString(s sql.NullString) *string {
+	if s.Valid {
+		return &s.String
+	}
+	return nil
+}
